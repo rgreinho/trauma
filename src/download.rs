@@ -1,6 +1,7 @@
 //! Represents a file to be downloaded.
 
 use crate::Error;
+use http::StatusCode;
 use std::convert::TryFrom;
 use url::Url;
 
@@ -76,6 +77,69 @@ impl TryFrom<&str> for Download {
                 Error::InvalidUrl(format!("the url \"{}\" cannot be parsed: {}", value, e))
             })
             .and_then(|u| Download::try_from(&u))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Status {
+    Fail(String),
+    Success,
+    NotStarted,
+}
+/// Represents a [`Download`] summary.
+#[derive(Debug, Clone)]
+pub struct Summary {
+    /// Downloaded items.
+    download: Download,
+    /// HTTP status code.
+    statuscode: StatusCode,
+    /// Download size in bytes.
+    size: u64,
+    /// Status.
+    status: Status,
+}
+
+impl Summary {
+    /// Create a new [`Download`] [`Summary`].
+    pub fn new(download: Download, statuscode: StatusCode, size: u64) -> Self {
+        Self {
+            download,
+            statuscode,
+            size,
+            status: Status::NotStarted,
+        }
+    }
+
+    /// Attach a status to a [`Download`] [`Summary`].
+    pub fn with_status(self, status: Status) -> Self {
+        Self { status, ..self }
+    }
+
+    /// Get the summary's status.
+    pub fn statuscode(&self) -> StatusCode {
+        self.statuscode
+    }
+
+    /// Get the summary's size.
+    pub fn size(&self) -> u64 {
+        self.size
+    }
+
+    /// Get a reference to the summary's download.
+    pub fn download(&self) -> &Download {
+        &self.download
+    }
+
+    /// Get a reference to the summary's status.
+    pub fn status(&self) -> &Status {
+        &self.status
+    }
+
+    pub fn fail(self, msg: impl std::fmt::Display) -> Self {
+        Self {
+            status: Status::Fail(format!("{}", msg)),
+            ..self
+        }
     }
 }
 
