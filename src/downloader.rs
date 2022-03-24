@@ -1,7 +1,8 @@
 //! Represents the download controller.
 
-use crate::{download::Download, Error};
+use crate::{download::Download, download::Status, download::Summary};
 use futures::stream::{self, StreamExt};
+use http::StatusCode;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
@@ -27,7 +28,7 @@ pub struct Downloader {
 
 impl Downloader {
     /// Starts the downloads.
-    pub async fn download(&self, downloads: &[Download]) {
+    pub async fn download(&self, downloads: &[Download]) -> Vec<Summary> {
         // Prepare the HTTP client.
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
         let client = ClientBuilder::new(reqwest::Client::new())
@@ -36,34 +37,78 @@ impl Downloader {
             .build();
 
         // Download the files asynchronously.
-        let _tasks = stream::iter(downloads)
+        stream::iter(downloads)
             .map(|d| self.fetch(&client, d))
             .buffer_unordered(self.concurrent_downloads)
             .collect::<Vec<_>>()
-            .await;
+            .await
     }
 
     /// Fetches the files and write them to disk.
-    async fn fetch(&self, client: &ClientWithMiddleware, download: &Download) -> Result<(), Error> {
+    async fn fetch(&self, client: &ClientWithMiddleware, download: &Download) -> Summary {
+        // Create a download summary.
+        let mut summary = Summary::new(download.clone(), StatusCode::BAD_REQUEST, 0);
+
         // Request the file.
-        debug!("Fetching {}", download.url.clone());
-        let res = client.get(download.url.clone()).send().await.unwrap();
+        debug!("Fetching {}", &download.url);
+        let res = match client.get(download.url.clone()).send().await {
+            Ok(res) => res,
+            Err(e) => {
+                return summary.fail(e);
+            }
+        };
+
+        // Check the status for errors.
+        match res.error_for_status_ref() {
+            Ok(_res) => (),
+            Err(e) => {
+                return summary.fail(e);
+            }
+        };
+
+        // Update the summary with the collected details.
+        let size = res.content_length().unwrap_or_default();
+        let status = res.status();
+        summary = Summary::new(download.clone(), status, size);
 
         // Prepare the destination directory/file.
-        fs::create_dir_all(&self.directory)?;
+        match fs::create_dir_all(&self.directory) {
+            Ok(_res) => (),
+            Err(e) => {
+                return summary.fail(e);
+            }
+        };
         let output = self.directory.join(&download.filename);
         debug!("Creating file {:?}", &output);
-        let mut file = File::create(output)?;
+        let mut file = match File::create(output) {
+            Ok(file) => file,
+            Err(e) => {
+                return summary.fail(e);
+            }
+        };
 
         // Download the file chunk by chunk.
         debug!("Retrieving chunks...");
         let mut stream = res.bytes_stream();
         while let Some(item) = stream.next().await {
-            let chunk = item?;
-            file.write_all(&chunk)?;
+            // Retrieve chunk.
+            let chunk = match item {
+                Ok(chunk) => chunk,
+                Err(e) => {
+                    return summary.fail(e);
+                }
+            };
+
+            // Write the chunk to disk.
+            match file.write_all(&chunk) {
+                Ok(_res) => (),
+                Err(e) => {
+                    return summary.fail(e);
+                }
+            };
         }
 
-        Ok(())
+        summary.with_status(Status::Success)
     }
 }
 
@@ -107,7 +152,7 @@ impl DownloaderBuilder {
 impl Default for DownloaderBuilder {
     fn default() -> Self {
         Self(Downloader {
-            directory: std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("")),
+            directory: std::env::current_dir().unwrap_or_default(),
             retries: DEFAULT_RETRIES,
             concurrent_downloads: DEFAULT_CONCURRENT_DOWNLOADS,
         })
