@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 futures = "0.3.21"
-indicatif = "0.17.0-rc.2"
+indicatif = { git = "https://github.com/console-rs/indicatif" }
 reqwest = { version = "0.11.9", features = ["stream"] }
 reqwest-middleware = "0.1.5"
 reqwest-retry = "0.1.4"
@@ -23,4 +23,4 @@ http = "0.2.6"
 color-eyre = "0.6.1"
 comfy-table = "5.0.1"
 opentelemetry = "0.17"
-tracing-subscriber ={ version = "0.2", features = ["env-filter"]}
+tracing-subscriber = "0.2"

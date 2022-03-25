@@ -3,6 +3,7 @@
 use crate::{download::Download, download::Status, download::Summary};
 use futures::stream::{self, StreamExt};
 use http::StatusCode;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
@@ -10,6 +11,7 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing::debug;
 
 const DEFAULT_RETRIES: u32 = 3;
@@ -36,16 +38,29 @@ impl Downloader {
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build();
 
+        // Prepare the progress bar.
+        let multi = Arc::new(MultiProgress::new());
+        let style = ProgressStyle::with_template("{bar:40.green/yellow} {pos:>7}/{len:7}").unwrap();
+        let main =
+            Arc::new(multi.add(ProgressBar::new(downloads.len() as u64).with_style(style.clone())));
+        main.tick();
+
         // Download the files asynchronously.
         stream::iter(downloads)
-            .map(|d| self.fetch(&client, d))
+            .map(|d| self.fetch(&client, d, multi.clone(), main.clone()))
             .buffer_unordered(self.concurrent_downloads)
             .collect::<Vec<_>>()
             .await
     }
 
     /// Fetches the files and write them to disk.
-    async fn fetch(&self, client: &ClientWithMiddleware, download: &Download) -> Summary {
+    async fn fetch(
+        &self,
+        client: &ClientWithMiddleware,
+        download: &Download,
+        multi: Arc<MultiProgress>,
+        main: Arc<ProgressBar>,
+    ) -> Summary {
         // Create a download summary.
         let mut summary = Summary::new(download.clone(), StatusCode::BAD_REQUEST, 0);
 
@@ -70,6 +85,13 @@ impl Downloader {
         let size = res.content_length().unwrap_or_default();
         let status = res.status();
         summary = Summary::new(download.clone(), status, size);
+
+        // Create the progress bar.
+        let style = ProgressStyle::with_template(
+            "{bar:40.cyan/blue} {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
+        )
+        .unwrap();
+        let pb = multi.add(ProgressBar::new(size).with_style(style.clone()));
 
         // Prepare the destination directory/file.
         match fs::create_dir_all(&self.directory) {
@@ -98,6 +120,7 @@ impl Downloader {
                     return summary.fail(e);
                 }
             };
+            pb.inc(chunk.len() as u64);
 
             // Write the chunk to disk.
             match file.write_all(&chunk) {
@@ -108,6 +131,13 @@ impl Downloader {
             };
         }
 
+        // Remove the bar once complete.
+        pb.finish_and_clear();
+
+        // Advance the main progress bar.
+        main.inc(1);
+
+        // Return the download summary.
         summary.with_status(Status::Success)
     }
 }
