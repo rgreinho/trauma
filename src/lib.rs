@@ -1,5 +1,5 @@
-//! Trauma is crate aiming at providing a simple way to download files asynchronously via HTTP(S).
-//!
+//! Trauma is crate aiming at providing a simple way to download files
+//! asynchronously via HTTP(S).
 
 pub mod download;
 pub mod downloader;

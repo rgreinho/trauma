@@ -18,6 +18,16 @@ const DEFAULT_RETRIES: u32 = 3;
 const DEFAULT_CONCURRENT_DOWNLOADS: usize = 32;
 
 /// Represents the download controller.
+///
+/// A downloader can be created via its builder:
+///
+/// ```rust
+/// # fn main()  {
+/// use trauma::downloader::DownloaderBuilder;
+///
+/// let d = DownloaderBuilder::new().build();
+/// # }
+/// ```
 #[derive(Debug, Clone)]
 pub struct Downloader {
     /// Directory where to store the downloaded files.
@@ -46,11 +56,17 @@ impl Downloader {
         main.tick();
 
         // Download the files asynchronously.
-        stream::iter(downloads)
+        let summaries = stream::iter(downloads)
             .map(|d| self.fetch(&client, d, multi.clone(), main.clone()))
             .buffer_unordered(self.concurrent_downloads)
             .collect::<Vec<_>>()
-            .await
+            .await;
+
+        // Finish the progress bar.
+        main.finish();
+
+        // Return the download summaries.
+        summaries
     }
 
     /// Fetches the files and write them to disk.
@@ -143,6 +159,14 @@ impl Downloader {
 }
 
 /// A builder used to create a [`Downloader`].
+///
+/// ```rust
+/// # fn main()  {
+/// use trauma::downloader::DownloaderBuilder;
+///
+/// let d = DownloaderBuilder::new().retries(5).directory("downloads".into()).build();
+/// # }
+/// ```
 pub struct DownloaderBuilder(Downloader);
 
 impl DownloaderBuilder {
