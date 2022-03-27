@@ -1,5 +1,9 @@
 # Trauma
 
+[![Crates.io](https://img.shields.io/crates/v/trauma.svg)](https://crates.io/crates/trauma)
+[![Documentation](https://docs.rs/trauma/badge.svg)](https://docs.rs/trauma/)
+[![ci](https://github.com/rgreinho/trauma/actions/workflows/ci-rust.yml/badge.svg)](https://github.com/rgreinho/trauma/actions/workflows/ci-rust.yml)
+
 Tokio Rust Asynchronous Universal download MAnager
 
 ## Description
@@ -34,7 +38,7 @@ Add this to your `Cargo.toml`:
 trauma = "1.0"
 ```
 
-## Quickstart
+## Quick start
 
 ```rust
 use std::path::PathBuf;
@@ -57,10 +61,10 @@ More examples can be found in the [examples](examples) folder.
 ## Why another download manager
 
 Before starting this project, I spent some time searching the internet, trying
-not to reinvent the wheel. And I did find a bunch of interesting exisiting
+not to reinvent the wheel. And I did find a bunch of interesting existing
 projects!
 
-However they are almost all abandonned:
+However they are almost all abandoned:
 
 - DLM: <https://github.com/agourlay/dlm>
   - Active, but is just a binary/CLI tool

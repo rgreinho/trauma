@@ -13,20 +13,6 @@ on:
       - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-
   test:
     runs-on: ubuntu-latest
     steps:
@@ -44,38 +30,39 @@ jobs:
         with:
           command: run
           args: --example simple
-
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v1
-      - run: rustup component add rustfmt
       - uses: actions-rs/cargo@v1
         with:
-          command: fmt
-          args: --all -- --check
+          command: run
+          args: --example with-report
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: extractions/setup-just@v1
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v1
-      - run: rustup component add clippy
+      - run: rustup component add clippy rustfmt
+      - name: Check the code formatting
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings
+      - name: Lint markdown
+        run: just lint-md
+      - name: Spell check
+        run: just lint-spellcheck
 
   build:
       name: build
@@ -95,8 +82,6 @@ jobs:
   release:
     needs:
       - build
-      - check
-      - format
       - lint
       - test
     runs-on: ubuntu-latest

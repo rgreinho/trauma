@@ -1,0 +1,9 @@
+[Hunspell]
+lang = "en_US"
+search_dirs = ["."]
+extra_dictionaries = ["trauma.dic"]
+skip_os_lookups = true
+use_builtin = true
+
+[Reflow]
+max_line_length = 80
