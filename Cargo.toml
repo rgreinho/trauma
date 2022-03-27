@@ -22,7 +22,7 @@ reqwest-retry = "0.1.4"
 reqwest-tracing = { version = "0.2.1", features = ["opentelemetry_0_17"] }
 thiserror = "1.0.30"
 tracing = "0.1"
-tracing-opentelemetry = "0.15"
+tracing-opentelemetry = "0.17"
 tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 url = "2.2.2"
 http = "0.2.6"
