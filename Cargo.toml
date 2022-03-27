@@ -1,7 +1,15 @@
 [package]
 name = "trauma"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Simplify and prettify HTTP downloads"
+homepage = "https://github.com/rgreinho/trauma"
+repository = "https://github.com/rgreinho/trauma"
+readme = "README.md"
+categories = ["concurrency"]
+keywords = ["http", "download", "async", "tokio", "indicatif"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

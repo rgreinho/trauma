@@ -10,14 +10,14 @@ use url::Url;
 pub struct Download {
     /// URL of the file to download.
     pub url: Url,
-    /// Filename used to save the file on disk.
+    /// File name used to save the file on disk.
     pub filename: String,
 }
 
 impl Download {
     /// Creates a new [`Download`].
     ///
-    /// When using the [`Download::try_from`] method, the filename is
+    /// When using the [`Download::try_from`] method, the file name is
     /// automatically extracted from the URL.
     ///
     /// ## Example

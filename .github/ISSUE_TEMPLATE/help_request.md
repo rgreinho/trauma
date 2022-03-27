@@ -4,13 +4,11 @@ about: Ask for help
 labels: feedback/question
 ---
 
-
 <!-- Provide a general summary of the issue in the title above. -->
 
-Problem
--------
-<!-- Describe your problem or state your question. -->
+## Problem
 
+<!-- Describe your problem or state your question. -->
 
 <!-- What have you attempted to do to workaround the problem? -->
 
