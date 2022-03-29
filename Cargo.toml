@@ -2,7 +2,7 @@
 name = "trauma"
 version = "1.0.0"
 edition = "2021"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 description = "Simplify and prettify HTTP downloads"
 homepage = "https://github.com/rgreinho/trauma"
 repository = "https://github.com/rgreinho/trauma"

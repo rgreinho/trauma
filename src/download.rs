@@ -83,8 +83,9 @@ impl TryFrom<&str> for Download {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Status {
     Fail(String),
-    Success,
     NotStarted,
+    Skipped(String),
+    Success,
 }
 /// Represents a [`Download`] summary.
 #[derive(Debug, Clone)]

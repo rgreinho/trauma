@@ -24,6 +24,7 @@ async fn main() -> Result<(), Report> {
     let fake = format!("{}.fake", &reqwest_rs);
     let downloads = vec![
         Download::try_from(reqwest_rs).unwrap(),
+        Download::try_from(reqwest_rs).unwrap(),
         Download::try_from(fake.as_str()).unwrap(),
     ];
     let downloader = DownloaderBuilder::new()
@@ -54,6 +55,10 @@ fn display_summary(summaries: &[Summary]) {
                 String::from("❌")
             }
             Status::NotStarted => String::from("🔜"),
+            Status::Skipped(s) => {
+                error = s.to_string();
+                String::from("⏭️")
+            }
         };
         table.add_row(vec![
             &s.download().filename,

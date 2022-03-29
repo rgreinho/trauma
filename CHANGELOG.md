@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Added ability to skip a download if a file with the same name exists at the
+  destination. [#16]
+
 ## [1.0.0] - 2022-03-29
 
 Initial version with the following feature set:
@@ -26,3 +31,4 @@ Initial version with the following feature set:
   - Display the total progress
 
 [1.0.0]: https://github.com/rgreinho/trauma/releases/tag/1.0.0
+[#16]: https://github.com/rgreinho/trauma/pull/16

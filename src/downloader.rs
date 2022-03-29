@@ -36,6 +36,8 @@ pub struct Downloader {
     retries: u32,
     /// Number of maximum concurrent downloads.
     concurrent_downloads: usize,
+    /// Skip a download if a file with the same name already exists at the destination.
+    skip_existing: bool,
 }
 
 impl Downloader {
@@ -80,6 +82,15 @@ impl Downloader {
         // Create a download summary.
         let mut summary = Summary::new(download.clone(), StatusCode::BAD_REQUEST, 0);
 
+        // Check if we should skip the file or continue.
+        let output = self.directory.join(&download.filename);
+        if self.skip_existing && output.exists() {
+            return summary.with_status(Status::Skipped(format!(
+                "a file with the same name already exists at the destination: {:?}",
+                &output
+            )));
+        }
+
         // Request the file.
         debug!("Fetching {}", &download.url);
         let res = match client.get(download.url.clone()).send().await {
@@ -116,7 +127,7 @@ impl Downloader {
                 return summary.fail(e);
             }
         };
-        let output = self.directory.join(&download.filename);
+
         debug!("Creating file {:?}", &output);
         let mut file = match File::create(output) {
             Ok(file) => file,
@@ -193,12 +204,19 @@ impl DownloaderBuilder {
         self
     }
 
+    /// Skip a download if a file with the same name already exists at the destination.
+    pub fn skip_existing(mut self, skip_existing: bool) -> Self {
+        self.0.skip_existing = skip_existing;
+        self
+    }
+
     /// Create the [`Downloader`] with the specified options.
     pub fn build(self) -> Downloader {
         Downloader {
             directory: self.0.directory,
             retries: self.0.retries,
             concurrent_downloads: self.0.concurrent_downloads,
+            skip_existing: self.0.skip_existing,
         }
     }
 }
@@ -209,6 +227,7 @@ impl Default for DownloaderBuilder {
             directory: std::env::current_dir().unwrap_or_default(),
             retries: DEFAULT_RETRIES,
             concurrent_downloads: DEFAULT_CONCURRENT_DOWNLOADS,
+            skip_existing: true,
         })
     }
 }
