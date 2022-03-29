@@ -15,7 +15,7 @@ keywords = ["http", "download", "async", "tokio", "indicatif"]
 
 [dependencies]
 futures = "0.3.21"
-indicatif = { git = "https://github.com/console-rs/indicatif" }
+indicatif = "0.17.0-rc.10"
 reqwest = { version = "0.11.9", features = ["stream"] }
 reqwest-middleware = "0.1.5"
 reqwest-retry = "0.1.4"
