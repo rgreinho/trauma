@@ -78,6 +78,21 @@ jobs:
         - uses: actions-rs/cargo@v1
           with:
             command: build
+        - uses: actions-rs/cargo@v1
+          with:
+            command: package
+        - run: |
+            mkdir -p dist
+            cp target/package/*.crate dist/
+        - name: Generate provenance
+          uses: slsa-framework/github-actions-demo@v0.1
+          with:
+            artifact_path: dist/
+            output_path: trauma.${{ github.sha }}.att
+        - name: Upload provenance
+          uses: actions/upload-artifact@v2
+          with:
+            path: trauma.${{ github.sha }}.att
 
   release:
     needs:

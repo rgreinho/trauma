@@ -7,7 +7,7 @@ lint-md:
 
 # Spell check the source code.
 lint-spellcheck:
-    @cargo spellcheck --version >/dev/null || cargo install cargo-spellcheck
+    @cargo spellcheck --version >/dev/null 2>&1|| cargo install cargo-spellcheck
     cargo spellcheck check -m 1
 
 # Meta tasks running all formatters at once.
