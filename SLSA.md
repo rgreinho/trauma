@@ -11,14 +11,14 @@ and explain why we meet each criteria.
 SLSA level 1 does not do much, but helps us get on track to build a resilient
 system. We only have 2 requirements to satisfy.
 
-### [Scripted Build]
+### ✅ [Build - Scripted build]
 
 > All build steps were fully defined in some sort of “build script”. The only
 > manual command, if any, was to invoke the build script.
 
-We use a GitHub Workflow to execute all the CI steps, so we're good here ✅.
+We use a GitHub Workflow to execute all the CI steps.
 
-### [Available Provenance]
+### ✅ [Provenance - Available]
 
 > The provenance is available to the consumer in a format that the consumer
 > accepts. The format SHOULD be in-toto SLSA Provenance, but another format MAY
@@ -26,7 +26,7 @@ We use a GitHub Workflow to execute all the CI steps, so we're good here ✅.
 > requirements.
 
 We provide provenance using the SLSA [github-actions-demo] and attach it to the
-GitHub Release. So we're also good here ✅.
+GitHub Release.
 
 ### Things to notice
 
@@ -42,7 +42,7 @@ GitHub Release. So we're also good here ✅.
 We keep adding to the security here, by requiring automated CI systems and
 introducing signing.
 
-### [Version Controlled Source]
+### ✅ [Source - Version controlled]
 
 > Every change to the source is tracked in a version control system that meets
 > the following requirements:
@@ -59,14 +59,14 @@ introducing signing.
 We are using `git` as our CVS, which meets these requirements, so we're good
 here ✅.
 
-### [Build Service]
+### ✅ [Build - Build service]
 
 > All build steps ran using some build service, not on a developer’s
 > workstation.
 
-We use GitHub Actions as the automated build system, so we're good here ✅.
+We use GitHub Actions as the automated build system.
 
-### [Authenticated Provenance]
+### ✅ [Provenance - Authenticated]
 
 > The provenance’s authenticity and integrity can be verified by the consumer.
 > This SHOULD be through a digital signature from a private key accessible only
@@ -92,9 +92,9 @@ $ cosign verify-blob --key trauma.pub --signature trauma.sig trauma.att
 Verified OK
 ```
 
-And we're good here ✅.
+And we're good here.
 
-### [Service generated Provenance]
+### ✅ [Provenance - Service generated]
 
 > The data in the provenance MUST be obtained from the build service (either
 > because the generator is the build service or because the provenance generator
@@ -112,19 +112,129 @@ And we're good here ✅.
 >   “good” builds and reject “bad” builds.
 > - The “reproducible” boolean and justification from Reproducible.
 
-We are generating the provenance as a step in our GitHub Workflow, so we're good
-here ✅.
+We are generating the provenance as a step in our GitHub Workflow ✅.
 
-[authenticated provenance]:
-  https://slsa.dev/spec/v0.1/requirements#authenticated
-[available provenance]: https://slsa.dev/spec/v0.1/requirements#available
-[build service]: https://slsa.dev/spec/v0.1/requirements#build-service
+### Things to notice
+
+- It is best practice to add a password to the signing key, but it was not
+  required to be SLSA 2 compliant.
+- Could probably further improve the verification workflow by using
+  [rekor]/[fulcio].
+- Using the GitHub OIDC provider would also be a nice addition, but this feature
+  is still marked as experimental at the time of writing. See the [openid
+  signing] reference for more information.
+
+## SLSA 3
+
+Now we are getting serious!
+
+### ✅ [Verified Source History]
+
+> Every change in the revision’s history has at least one strongly authenticated
+> actor identity (author, uploader, reviewer, etc.) and timestamp. It must be
+> clear which identities were verified, and those identities must use two-step
+> verification or similar. (Exceptions noted below.)
+
+Here are the elements allowing us to match this requirement:
+
+- We are using GitHub.
+- We can identify the author of a pull-request.
+- A GitHub account is required to submit a pull-request.
+- This repository is not in an organization, BUT 2FA is enabled.
+- This repository requires pull-request to add changes and the main branch has
+  been protected.
+
+So we should be in compliance here.
+
+### ✅ [Source - Retained indefinitely] (18 months for SLSA 3)
+
+> The revision and its change history are preserved indefinitely and cannot be
+> deleted, except when subject to an established and transparent policy for
+> obliteration, such as a legal or policy requirement.
+>
+> [Immutable history] It must not be possible for persons to delete or modify
+> the history, even with multi-party approval, except by trusted platform admins
+> with two-party approval following the obliterate policy.
+
+Since we are using GitHub we think we are in compliance with this item. Besides
+`git` does not allow to modify a commit without altering the child commits.
+
+### ✅ [Build - Build as code]
+
+> The build definition and configuration is defined in text files, stored in a
+> version control system, and is executed by the build service.
+
+Our build operations are defined in the our GitHub workflow `ci-rust.yml`.
+
+### ❓ [Build - Ephemeral environment]
+
+> The build service ensured that the build steps ran in an ephemeral
+> environment, such as a container or VM, provisioned solely for this build, and
+> not reused from a prior build.
+
+[github hosted runners] are ephemeral VMs. Therefore each workflow will be run
+in a different VM, **but not each step**. So if we follow the definition
+strictly, we are not in compliance here. But since our jobs are isolated from
+each others, we might still be good.
+
+### ❓ [Build - Isolated]
+
+> The build service ensured that the build steps ran in an isolated environment
+> free of influence from other build instances, whether prior or concurrent.
+>
+> - It MUST NOT be possible for a build to access any secrets of the build
+>   service, such as the provenance signing key.
+> - It MUST NOT be possible for two builds that overlap in time to influence one
+>   another.
+> - It MUST NOT be possible for one build to persist or influence the build
+>   environment of a subsequent build.
+> - Build caches, if used, MUST be purely content-addressable to prevent
+>   tampering.
+
+We think we are in compliance here, but the secrets are usable to each step of
+the workflow, even though the contant cannot be viewed direclty.
+
+GitHub actions lets admin share secrets either at the organization level, either
+at the repository level. This part will require more digging to see if the way
+GitHub Actions is implemented is compliant or not.
+
+### Things to notice
+
+- Although we can identify the authors of a pull-request, commit signing is not
+  required.
+- Some definitions could use some clarification.
+- There is no standard naming and each CI system uses different words to mean
+  the same thing, or the same words to mean different things.
+
+  | GitHub   | Tekton   |
+  | -------- | -------- |
+  | Workflow | Pipeline |
+  | Job      | Task     |
+  | Step     | Step     |
+
+[build - build as code]: https://slsa.dev/spec/v0.1/requirements#build-as-code
+[build - isolated]: https://slsa.dev/spec/v0.1/requirements#isolated
+[build - build service]: https://slsa.dev/spec/v0.1/requirements#build-service
+[build - ephemeral environment]:
+  https://slsa.dev/spec/v0.1/requirements#ephemeral-environment
+[build - scripted build]: https://slsa.dev/spec/v0.1/requirements#scripted-build
 [cosign]: https://github.com/sigstore/cosign
+[fulcio]: https://github.com/sigstore/fulcio
 [github-actions-demo]: https://github.com/slsa-framework/github-actions-demo
-[scripted build]: https://slsa.dev/spec/v0.1/requirements#scripted-build
-[service generated provenance]:
+[github hosted runners]:
+  https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
+[openid signing]: https://docs.sigstore.dev/cosign/openid_signing
+[provenance - authenticated]:
+  https://slsa.dev/spec/v0.1/requirements#authenticated
+[provenance - available]: https://slsa.dev/spec/v0.1/requirements#available
+[provenance -service generated]:
   https://slsa.dev/spec/v0.1/requirements#service-generated
-[slsa]: https://slsa.dev/
+[rekor]: https://github.com/sigstore/rekor
 [slsa levels]: https://slsa.dev/spec/v0.1/levels
-[version controlled source]:
+[slsa]: https://slsa.dev/
+[source - retained indefinitely]:
+  https://slsa.dev/spec/v0.1/requirements#retained-indefinitely
+[source - version controlled]:
   https://slsa.dev/spec/v0.1/requirements#version-controlled
+[verified source history]:
+  https://slsa.dev/spec/v0.1/requirements#verified-history
