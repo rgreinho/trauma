@@ -128,7 +128,7 @@ We are generating the provenance as a step in our GitHub Workflow ✅.
 
 Now we are getting serious!
 
-### ✅ [Verified Source History]
+### ✅ [Source - Verified history]
 
 > Every change in the revision’s history has at least one strongly authenticated
 > actor identity (author, uploader, reviewer, etc.) and timestamp. It must be
@@ -172,10 +172,10 @@ Our build operations are defined in the our GitHub workflow `ci-rust.yml`.
 > environment, such as a container or VM, provisioned solely for this build, and
 > not reused from a prior build.
 
-[github hosted runners] are ephemeral VMs. Therefore each workflow will be run
-in a different VM, **but not each step**. So if we follow the definition
-strictly, we are not in compliance here. But since our jobs are isolated from
-each others, we might still be good.
+[github hosted runners] are ephemeral VMs. Therefore each job will be run in a
+different VM, **but not each step**. So if we follow the definition strictly, we
+are not in compliance here. But since our jobs are isolated from each others, we
+may still be good.
 
 ### ❓ [Build - Isolated]
 
@@ -212,12 +212,106 @@ GitHub Actions is implemented is compliant or not.
   | Job      | Task     |
   | Step     | Step     |
 
+## SLSA 4
+
+Since we believe we are SLSA 3 compliant, let's continue this excercise and see
+if we can reach level 4.
+
+### ❌ [Source - Two-person reviewed]
+
+> Every change in the revision’s history was agreed to by two trusted persons
+> prior to submission, and both of these trusted persons were strongly
+> authenticated.
+
+We are failing this requirement since the repository only has 1 maintainer.
+
+### ✅ [Build - Parameterless]
+
+> The build output cannot be affected by user parameters other than the build
+> entry point and the top-level source location. In other words, the build is
+> fully defined through the build script and nothing else.
+
+We are using Github Actions in this manner. The only parameters are information
+coming from the source to build itself (commit sha, repository name, etc.)
+
+### ❌ [Build - Hermetic]
+
+> All transitive build steps, sources, and dependencies were fully declared up
+> front with immutable references, and the build steps ran with no network
+> access.
+
+All the dependencies are strongly specified in the `Cargo.lock` file.
+
+However the dependencies are being fetched from crates.io every time the build
+runs (even though we are using caching), so we may be failing this requirement.
+
+A way to satisfy this requirement would be to use `cargo vendor` to vendor all
+dependencies locally.
+
+### ❓ [Build - Reproducible] (best effort)
+
+> Re-running the build steps with identical input artifacts results in
+> bit-for-bit identical output. Builds that cannot meet this MUST provide a
+> justification why the build cannot be made reproducible.
+
+We think we are doing good on this one, mainly dur to the use of the lock file,
+but this item would require deeper investigation.
+
+### ❌ [Provenance - Dependencies complete]
+
+> Provenance records all build dependencies that were available while running
+> the build steps. This includes the initial state of the machine, VM, or
+> container of the build worker.
+
+We may provide an SBOM, but that does not seem to be enough to satisfy this
+criteria.
+
+### 🚫 [Common - Security]
+
+> The system meets some TBD baseline security standard to prevent compromise.
+> (Patching, vulnerability scanning, user isolation, transport security, secure
+> boot, machine identity, etc. Perhaps NIST 800-53 or a subset thereof.)
+
+This criteria seems to only apply does services which are deployed somewhere,
+therefore not apply here.
+
+### 🚫 [Common - Access]
+
+> All physical and remote access must be rare, logged, and gated behind
+> multi-party approval.
+
+This criteria seems to only apply does services which are deployed somewhere,
+therefore not apply here.
+
+### ❌ [Common - Superusers]
+
+> Only a small number of platform admins may override the guarantees listed
+> here. Doing so MUST require approval of a second platform admin.
+
+Since we have one admin, we're also failing this criteria. But they are talking
+about a platform admin, so it may no apply here.
+
+### Things to notice
+
+- A lot of projects/tools/libraries only have one maintainer. Therefore it rules
+  them out from being SLSA 4 compliant right away.
+- Such a high level of details in the provenance seems ideal, but it looks like
+  such a tool does not exist yet.
+- The criteria in the "Common" category seem to only applied to deployed
+  services.
+
 [build - build as code]: https://slsa.dev/spec/v0.1/requirements#build-as-code
 [build - isolated]: https://slsa.dev/spec/v0.1/requirements#isolated
 [build - build service]: https://slsa.dev/spec/v0.1/requirements#build-service
 [build - ephemeral environment]:
   https://slsa.dev/spec/v0.1/requirements#ephemeral-environment
+[build - hermetic]: https://slsa.dev/spec/v0.1/requirements#hermetic
+[build - reproducible]: https://slsa.dev/spec/v0.1/requirements#reproducible
+[build - parameterless]: https://slsa.dev/spec/v0.1/requirements#parameterless
 [build - scripted build]: https://slsa.dev/spec/v0.1/requirements#scripted-build
+[common - security]: https://slsa.dev/spec/v0.1/requirements#security
+[common - access]: https://slsa.dev/spec/v0.1/requirements#access
+[common - superusers]: https://slsa.dev/spec/v0.1/requirements#superusers
 [cosign]: https://github.com/sigstore/cosign
 [fulcio]: https://github.com/sigstore/fulcio
 [github-actions-demo]: https://github.com/slsa-framework/github-actions-demo
@@ -227,6 +321,8 @@ GitHub Actions is implemented is compliant or not.
 [provenance - authenticated]:
   https://slsa.dev/spec/v0.1/requirements#authenticated
 [provenance - available]: https://slsa.dev/spec/v0.1/requirements#available
+[provenance - dependencies complete]:
+  https://slsa.dev/spec/v0.1/requirements#dependencies-complete
 [provenance -service generated]:
   https://slsa.dev/spec/v0.1/requirements#service-generated
 [rekor]: https://github.com/sigstore/rekor
@@ -234,7 +330,9 @@ GitHub Actions is implemented is compliant or not.
 [slsa]: https://slsa.dev/
 [source - retained indefinitely]:
   https://slsa.dev/spec/v0.1/requirements#retained-indefinitely
+[source - two-person reviewed]:
+  https://slsa.dev/spec/v0.1/requirements#two-person-reviewed
 [source - version controlled]:
   https://slsa.dev/spec/v0.1/requirements#version-controlled
-[verified source history]:
+[source - verified history]:
   https://slsa.dev/spec/v0.1/requirements#verified-history
