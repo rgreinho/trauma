@@ -1,6 +1,6 @@
 //! Download files and show the report using comfy-table.
 //!
-//! Run with
+//! Run with:
 //!
 //! ```not_rust
 //! cargo run -q --example with-report

@@ -14,9 +14,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::debug;
 
-const DEFAULT_RETRIES: u32 = 3;
-const DEFAULT_CONCURRENT_DOWNLOADS: usize = 32;
-
 /// Represents the download controller.
 ///
 /// A downloader can be created via its builder:
@@ -38,9 +35,14 @@ pub struct Downloader {
     concurrent_downloads: usize,
     /// Skip a download if a file with the same name already exists at the destination.
     skip_existing: bool,
+    /// Downloader style options.
+    style_options: StyleOptions,
 }
 
 impl Downloader {
+    const DEFAULT_RETRIES: u32 = 3;
+    const DEFAULT_CONCURRENT_DOWNLOADS: usize = 32;
+
     /// Starts the downloads.
     pub async fn download(&self, downloads: &[Download]) -> Vec<Summary> {
         // Prepare the HTTP client.
@@ -52,9 +54,14 @@ impl Downloader {
 
         // Prepare the progress bar.
         let multi = Arc::new(MultiProgress::new());
-        let style = ProgressStyle::with_template("{bar:40.green/yellow} {pos:>7}/{len:7}").unwrap();
-        let main =
-            Arc::new(multi.add(ProgressBar::new(downloads.len() as u64).with_style(style.clone())));
+        let main = Arc::new(
+            multi.add(
+                self.style_options
+                    .main
+                    .clone()
+                    .to_progress_bar(downloads.len() as u64),
+            ),
+        );
         main.tick();
 
         // Download the files asynchronously.
@@ -65,7 +72,11 @@ impl Downloader {
             .await;
 
         // Finish the progress bar.
-        main.finish();
+        if self.style_options.main.clear {
+            main.finish_and_clear();
+        } else {
+            main.finish();
+        }
 
         // Return the download summaries.
         summaries
@@ -114,11 +125,7 @@ impl Downloader {
         summary = Summary::new(download.clone(), status, size);
 
         // Create the progress bar.
-        let style = ProgressStyle::with_template(
-            "{bar:40.cyan/blue} {bytes}/{total_bytes} ({bytes_per_sec}, {eta})",
-        )
-        .unwrap();
-        let pb = multi.add(ProgressBar::new(size).with_style(style.clone()));
+        let pb = multi.add(self.style_options.child.clone().to_progress_bar(size));
 
         // Prepare the destination directory/file.
         match fs::create_dir_all(&self.directory) {
@@ -159,7 +166,11 @@ impl Downloader {
         }
 
         // Remove the bar once complete.
-        pb.finish_and_clear();
+        if self.style_options.child.clear {
+            pb.finish_and_clear();
+        } else {
+            pb.finish();
+        }
 
         // Advance the main progress bar.
         main.inc(1);
@@ -210,6 +221,12 @@ impl DownloaderBuilder {
         self
     }
 
+    /// Set the downloader style options.
+    pub fn style_options(mut self, style_options: StyleOptions) -> Self {
+        self.0.style_options = style_options;
+        self
+    }
+
     /// Create the [`Downloader`] with the specified options.
     pub fn build(self) -> Downloader {
         Downloader {
@@ -217,6 +234,7 @@ impl DownloaderBuilder {
             retries: self.0.retries,
             concurrent_downloads: self.0.concurrent_downloads,
             skip_existing: self.0.skip_existing,
+            style_options: self.0.style_options,
         }
     }
 }
@@ -225,10 +243,160 @@ impl Default for DownloaderBuilder {
     fn default() -> Self {
         Self(Downloader {
             directory: std::env::current_dir().unwrap_or_default(),
-            retries: DEFAULT_RETRIES,
-            concurrent_downloads: DEFAULT_CONCURRENT_DOWNLOADS,
+            retries: Downloader::DEFAULT_RETRIES,
+            concurrent_downloads: Downloader::DEFAULT_CONCURRENT_DOWNLOADS,
             skip_existing: true,
+            style_options: StyleOptions::default(),
         })
+    }
+}
+
+/// Define the [`Downloader`] options.
+///
+/// By default, the main progress bar will stay on the screen upon completion,
+/// but the child ones will be cleared once complete.
+#[derive(Debug, Clone)]
+pub struct StyleOptions {
+    /// Style options for the main progress bar.
+    main: ProgressBarOpts,
+    /// Style options for the child progress bar(s).
+    child: ProgressBarOpts,
+}
+
+impl Default for StyleOptions {
+    fn default() -> Self {
+        Self {
+            main: ProgressBarOpts {
+                template: Some(ProgressBarOpts::TEMPLATE_BAR_WITH_POSITION.into()),
+                progress_chars: Some(ProgressBarOpts::CHARS_FINE.into()),
+                enabled: true,
+                clear: false,
+            },
+            child: ProgressBarOpts::with_pip_style(),
+        }
+    }
+}
+
+impl StyleOptions {
+    /// Create new [`Downloader`] [`StyleOptions`].
+    pub fn new(main: ProgressBarOpts, child: ProgressBarOpts) -> Self {
+        Self { main, child }
+    }
+
+    /// Set the options for the main progress bar.
+    pub fn set_main(&mut self, main: ProgressBarOpts) {
+        self.main = main;
+    }
+
+    /// Set the options for the child progress bar.
+    pub fn set_child(&mut self, child: ProgressBarOpts) {
+        self.child = child;
+    }
+}
+
+/// Define the options for a progress bar.
+#[derive(Debug, Clone)]
+pub struct ProgressBarOpts {
+    /// Progress bar template string.
+    template: Option<String>,
+    /// Progression characters set.
+    ///
+    /// There must be at least 3 characters for the following states:
+    /// "filled", "current", and "to do".
+    progress_chars: Option<String>,
+    /// Enable or disable the progress bar.
+    enabled: bool,
+    /// Clear the progress bar once completed.
+    clear: bool,
+}
+
+impl Default for ProgressBarOpts {
+    fn default() -> Self {
+        Self {
+            template: None,
+            progress_chars: None,
+            enabled: true,
+            clear: true,
+        }
+    }
+}
+
+impl ProgressBarOpts {
+    /// Template representing the bar and its position.
+    ///
+    ///`███████████████████████████████████████ 11/12 (99%) eta 00:00:02`
+    pub const TEMPLATE_BAR_WITH_POSITION: &'static str =
+        "{bar:40.blue} {pos:>}/{len} ({percent}%) eta {eta_precise:.blue}";
+    /// Template which looks like the Python package installer pip.
+    ///
+    /// `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 211.23 KiB/211.23 KiB 1008.31 KiB/s eta 0s`
+    pub const TEMPLATE_PIP: &'static str =
+        "{bar:40.green/black} {bytes:>11.green}/{total_bytes:<11.green} {bytes_per_sec:>13.red} eta {eta:.blue}";
+    /// Use increasing quarter blocks as progress characters: `"█▛▌▖  "`.
+    pub const CHARS_BLOCKY: &'static str = "█▛▌▖  ";
+    /// Use fade-in blocks as progress characters: `"█▓▒░  "`.
+    pub const CHARS_FADE_IN: &'static str = "█▓▒░  ";
+    /// Use fine blocks as progress characters: `"█▉▊▋▌▍▎▏  "`.
+    pub const CHARS_FINE: &'static str = "█▉▊▋▌▍▎▏  ";
+    /// Use a line as progress characters: `"━╾─"`.
+    pub const CHARS_LINE: &'static str = "━╾╴─";
+    /// Use rough blocks as progress characters: `"█  "`.
+    pub const CHARS_ROUGH: &'static str = "█  ";
+    /// Use increasing height blocks as progress characters: `"█▇▆▅▄▃▂▁  "`.
+    pub const CHARS_VERTICAL: &'static str = "█▇▆▅▄▃▂▁  ";
+
+    /// Create a new [`ProgressBarOpts`].
+    pub fn new(
+        template: Option<String>,
+        progress_chars: Option<String>,
+        enabled: bool,
+        clear: bool,
+    ) -> Self {
+        Self {
+            template,
+            progress_chars,
+            enabled,
+            clear,
+        }
+    }
+
+    /// Create a [`ProgressStyle`] based on the provided options.
+    pub fn to_progress_style(self) -> ProgressStyle {
+        let mut style = ProgressStyle::default_bar();
+        if let Some(template) = self.template {
+            style = style.template(&template).unwrap();
+        }
+        if let Some(progress_chars) = self.progress_chars {
+            style = style.progress_chars(&progress_chars);
+        }
+        style
+    }
+
+    /// Create a [`ProgressBar`] based on the provided options.
+    pub fn to_progress_bar(self, len: u64) -> ProgressBar {
+        // Return a hidden Progress bar if we disabled it.
+        if !self.enabled {
+            return ProgressBar::hidden();
+        }
+
+        // Otherwise returns a ProgressBar with the style.
+        let style = self.to_progress_style();
+        ProgressBar::new(len).with_style(style)
+    }
+
+    /// Create a new [`ProgressBarOpts`] which looks like Python pip.
+    pub fn with_pip_style() -> Self {
+        Self {
+            template: Some(ProgressBarOpts::TEMPLATE_PIP.into()),
+            progress_chars: Some(ProgressBarOpts::CHARS_LINE.into()),
+            enabled: true,
+            clear: true,
+        }
+    }
+
+    /// Set to `true` to clear the progress bar upon completion.
+    pub fn set_clear(&mut self, clear: bool) {
+        self.clear = clear;
     }
 }
 
@@ -239,7 +407,10 @@ mod test {
     #[test]
     fn test_builder_defaults() {
         let d = DownloaderBuilder::new().build();
-        assert_eq!(d.retries, DEFAULT_RETRIES);
-        assert_eq!(d.concurrent_downloads, DEFAULT_CONCURRENT_DOWNLOADS);
+        assert_eq!(d.retries, Downloader::DEFAULT_RETRIES);
+        assert_eq!(
+            d.concurrent_downloads,
+            Downloader::DEFAULT_CONCURRENT_DOWNLOADS
+        );
     }
 }
