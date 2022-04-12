@@ -94,7 +94,7 @@ Verified OK
 
 And we're good here.
 
-### ✅ [Provenance - Service generated]
+### ❌ [Provenance - Service generated]
 
 > The data in the provenance MUST be obtained from the build service (either
 > because the generator is the build service or because the provenance generator
@@ -112,7 +112,9 @@ And we're good here.
 >   “good” builds and reject “bad” builds.
 > - The “reproducible” boolean and justification from Reproducible.
 
-We are generating the provenance as a step in our GitHub Workflow ✅.
+We are generating the provenance through a custom action as a step in our GitHub
+Workflow. It is not a service offered by GitHub Actions itself. Therefore we do
+not meet the criteria.
 
 ### Things to notice
 
@@ -197,6 +199,24 @@ the workflow, even though the contant cannot be viewed direclty.
 GitHub actions lets admin share secrets either at the organization level, either
 at the repository level. This part will require more digging to see if the way
 GitHub Actions is implemented is compliant or not.
+
+### [Provenance - Non-falsifiable]
+
+> Provenance cannot be falsified by the build service’s users.
+>
+> NOTE: This requirement is a stricter version of Service Generated.
+>
+> - The provenance signing key MUST be stored in a secure key management system
+>   accessible only to the build service account.
+> - The provenance signing key MUST NOT be accessible to the environment running
+>   the user-defined build steps.
+> - Every field in the provenance MUST be generated or verified by the build
+>   service in a trusted control plane.
+> - The user-controlled build steps MUST NOT be able to inject or alter the
+>   contents, except as noted below.
+
+We clearly don't meet this criteria since our signing key is stored as a git
+secret, therefore accessible anywhere throughout the workflow.
 
 ### Things to notice
 
@@ -323,7 +343,9 @@ about a platform admin, so it may no apply here.
 [provenance - available]: https://slsa.dev/spec/v0.1/requirements#available
 [provenance - dependencies complete]:
   https://slsa.dev/spec/v0.1/requirements#dependencies-complete
-[provenance -service generated]:
+[provenance - non-falsifiable]:
+  https://slsa.dev/spec/v0.1/requirements#non-falsifiable
+[provenance - service generated]:
   https://slsa.dev/spec/v0.1/requirements#service-generated
 [rekor]: https://github.com/sigstore/rekor
 [slsa levels]: https://slsa.dev/spec/v0.1/levels
