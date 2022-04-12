@@ -200,7 +200,7 @@ GitHub actions lets admin share secrets either at the organization level, either
 at the repository level. This part will require more digging to see if the way
 GitHub Actions is implemented is compliant or not.
 
-### [Provenance - Non-falsifiable]
+### ❌ [Provenance - Non-falsifiable]
 
 > Provenance cannot be falsified by the build service’s users.
 >
