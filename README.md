@@ -28,6 +28,12 @@ to help monitoring the process.
 - Progress bar w/ [indicatif]
   - Display the individual progress
   - Display the total progress
+- Ability to customize the progress bars
+  - Customize the format
+  - Customize the progression style
+  - Leave them on the screen or clear them upon completion
+  - Hide any or both of them
+  - Add pre-configured styles
 
 ## Usage
 
@@ -88,7 +94,6 @@ As a result, I decided to write `trauma`.
 ### Potential ideas for future versions
 
 - Resume download
-- Optional progress bar
 - Support for other download protocol (i.e.: FTP)
 
 [indicatif]: https://github.com/console-rs/indicatif

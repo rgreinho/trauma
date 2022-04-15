@@ -30,5 +30,6 @@ http = "0.2.6"
 [dev-dependencies]
 color-eyre = "0.6.1"
 comfy-table = "5.0.1"
+console =  "0.15"
 opentelemetry = "0.17"
 tracing-subscriber = "0.3"

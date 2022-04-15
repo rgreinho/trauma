@@ -12,6 +12,12 @@ and this project adheres to
 
 - Added ability to skip a download if a file with the same name exists at the
   destination. [#16]
+- Added ability to customize the progress bars [#24]
+  - Customize the format
+  - Customize the progression style
+  - Leave them on the screen or clear them upon completion
+  - Hide any or both of them
+  - Add preconfigured styles
 
 ## [1.0.0] - 2022-03-29
 
@@ -32,3 +38,4 @@ Initial version with the following feature set:
 
 [1.0.0]: https://github.com/rgreinho/trauma/releases/tag/1.0.0
 [#16]: https://github.com/rgreinho/trauma/pull/16
+[#24]: https://github.com/rgreinho/trauma/pull/24
