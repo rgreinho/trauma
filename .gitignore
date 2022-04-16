@@ -1,4 +1,5 @@
 **/*.rs.bk
+.DS_Store
 /output/
 /target
 /target/

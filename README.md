@@ -12,7 +12,7 @@ Tokio Rust Asynchronous Universal download MAnager
 downloads are executed asynchronously and progress bars are drawn on the screen
 to help monitoring the process.
 
-![screenshot](assets/screenshot.png)
+![screenshot](assets/pip-style.png)
 
 ### Features
 

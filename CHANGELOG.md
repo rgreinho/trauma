@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [1.1.0] - 2022-04-15
+
 ### Added
 
 - Added ability to skip a download if a file with the same name exists at the
@@ -37,5 +39,6 @@ Initial version with the following feature set:
   - Display the total progress
 
 [1.0.0]: https://github.com/rgreinho/trauma/releases/tag/1.0.0
+[1.1.0]: https://github.com/rgreinho/trauma/releases/tag/1.1.0
 [#16]: https://github.com/rgreinho/trauma/pull/16
 [#24]: https://github.com/rgreinho/trauma/pull/24
