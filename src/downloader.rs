@@ -2,6 +2,7 @@
 
 use crate::{download::Download, download::Status, download::Summary};
 use futures::stream::{self, StreamExt};
+use http::header::{ACCEPT_RANGES, RANGE};
 use http::StatusCode;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
@@ -33,10 +34,10 @@ pub struct Downloader {
     retries: u32,
     /// Number of maximum concurrent downloads.
     concurrent_downloads: usize,
-    /// Skip a download if a file with the same name already exists at the destination.
-    skip_existing: bool,
     /// Downloader style options.
     style_options: StyleOptions,
+    /// Resume the download if necessary and possible.
+    resumable: bool,
 }
 
 impl Downloader {
@@ -91,20 +92,58 @@ impl Downloader {
         main: Arc<ProgressBar>,
     ) -> Summary {
         // Create a download summary.
-        let mut summary = Summary::new(download.clone(), StatusCode::BAD_REQUEST, 0);
-
-        // Check if we should skip the file or continue.
+        let mut size_on_disk: u64 = 0;
+        let mut resumable = false;
+        let mut summary = Summary::new(
+            download.clone(),
+            StatusCode::BAD_REQUEST,
+            size_on_disk,
+            resumable,
+        );
         let output = self.directory.join(&download.filename);
-        if self.skip_existing && output.exists() {
-            return summary.with_status(Status::Skipped(format!(
-                "a file with the same name already exists at the destination: {:?}",
-                &output
-            )));
+
+        // If resumable is turned on...
+        if self.resumable {
+            // Check whether the download is resumable.
+            let res = match client.head(download.url.clone()).send().await {
+                Ok(res) => res,
+                Err(e) => {
+                    return summary.fail(e);
+                }
+            };
+            let headers = res.headers();
+            resumable = match headers.get(ACCEPT_RANGES) {
+                None => false,
+                Some(x) if x == "none" => false,
+                Some(_) => true,
+            };
+
+            // If we can resume...
+            if resumable {
+                // Check if there is a file on disk already.
+                if output.exists() {
+                    debug!("A file with the same name already exists at the destination.");
+                    // If so, check file length to know where to restart the download from.
+                    size_on_disk = match output.metadata() {
+                        Ok(m) => m.len(),
+                        Err(e) => {
+                            return summary.fail(e);
+                        }
+                    }
+                }
+            }
+
+            // Update the summary accordingly.
+            summary.set_resumable(resumable);
         }
 
         // Request the file.
         debug!("Fetching {}", &download.url);
-        let res = match client.get(download.url.clone()).send().await {
+        let mut req = client.get(download.url.clone());
+        if self.resumable && resumable {
+            req = req.header(RANGE, format!("bytes={}-", size_on_disk));
+        }
+        let res = match req.send().await {
             Ok(res) => res,
             Err(e) => {
                 return summary.fail(e);
@@ -122,12 +161,28 @@ impl Downloader {
         // Update the summary with the collected details.
         let size = res.content_length().unwrap_or_default();
         let status = res.status();
-        summary = Summary::new(download.clone(), status, size);
+        summary = Summary::new(download.clone(), status, size, resumable);
+
+        // If there is nothing else to download for this file, we can return.
+        if size == size_on_disk {
+            return summary.with_status(Status::Skipped(
+                "the file was already fully downloaded".into(),
+            ));
+        }
 
         // Create the progress bar.
-        let pb = multi.add(self.style_options.child.clone().to_progress_bar(size));
+        // If the download is being resumed, the progress bar position is
+        // updated to start where the download stopped before.
+        let pb = multi.add(
+            self.style_options
+                .child
+                .clone()
+                .to_progress_bar(size)
+                .with_position(size_on_disk),
+        );
 
         // Prepare the destination directory/file.
+        debug!("Creating destination directory {:?}", &self.directory);
         match fs::create_dir_all(&self.directory) {
             Ok(_res) => (),
             Err(e) => {
@@ -135,8 +190,8 @@ impl Downloader {
             }
         };
 
-        debug!("Creating file {:?}", &output);
-        let mut file = match File::create(output) {
+        debug!("Creating destination file {:?}", &output);
+        let mut file = match File::options().append(true).create(true).open(output) {
             Ok(file) => file,
             Err(e) => {
                 return summary.fail(e);
@@ -165,7 +220,7 @@ impl Downloader {
             };
         }
 
-        // Remove the bar once complete.
+        // Finish the progress bar once complete, and optionally remove it.
         if self.style_options.child.clear {
             pb.finish_and_clear();
         } else {
@@ -215,12 +270,6 @@ impl DownloaderBuilder {
         self
     }
 
-    /// Skip a download if a file with the same name already exists at the destination.
-    pub fn skip_existing(mut self, skip_existing: bool) -> Self {
-        self.0.skip_existing = skip_existing;
-        self
-    }
-
     /// Set the downloader style options.
     pub fn style_options(mut self, style_options: StyleOptions) -> Self {
         self.0.style_options = style_options;
@@ -233,8 +282,8 @@ impl DownloaderBuilder {
             directory: self.0.directory,
             retries: self.0.retries,
             concurrent_downloads: self.0.concurrent_downloads,
-            skip_existing: self.0.skip_existing,
             style_options: self.0.style_options,
+            resumable: self.0.resumable,
         }
     }
 }
@@ -245,8 +294,8 @@ impl Default for DownloaderBuilder {
             directory: std::env::current_dir().unwrap_or_default(),
             retries: Downloader::DEFAULT_RETRIES,
             concurrent_downloads: Downloader::DEFAULT_CONCURRENT_DOWNLOADS,
-            skip_existing: true,
             style_options: StyleOptions::default(),
+            resumable: true,
         })
     }
 }

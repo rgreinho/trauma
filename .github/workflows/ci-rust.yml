@@ -23,17 +23,22 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
+      - name: Run the unit/doc tests
+        uses: actions-rs/cargo@v1
         with:
           command: test
-      - uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --example simple
-      - uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --example with-report
+      - name: Test examples
+        run: |
+          EXAMPLES="simple
+          with-report
+          with-style
+          with-resume
+          "
+          for example in $EXAMPLES; do
+            echo "==== Testing $example ======================================="
+            cargo run -q --example "$example"
+            echo "============================================================="
+          done
 
   lint:
     runs-on: ubuntu-latest

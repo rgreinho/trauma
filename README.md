@@ -8,9 +8,9 @@ Tokio Rust Asynchronous Universal download MAnager
 
 ## Description
 
-`Trauma is a library simplifying and prettifying HTTP(s) downloads. The
-downloads are executed asynchronously and progress bars are drawn on the screen
-to help monitoring the process.
+Trauma is a library simplifying and prettifying HTTP(s) downloads. The downloads
+are executed asynchronously and progress bars are drawn on the screen to help
+monitoring the process.
 
 ![screenshot](assets/pip-style.png)
 
@@ -24,6 +24,7 @@ to help monitoring the process.
   - Download directory
   - Maximum simultaneous requests
   - Number of retries
+  - Resume downloads (if supported by the remote server)
 - Asynchronous w/ [Tokio]
 - Progress bar w/ [indicatif]
   - Display the individual progress
@@ -41,7 +42,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-trauma = "1.0"
+trauma = "1"
 ```
 
 ## Quick start
@@ -62,7 +63,8 @@ async fn main() -> Result<(), Error> {
 }
 ```
 
-More examples can be found in the [examples](examples) folder.
+More examples can be found in the [examples](examples) folder. They are well
+commented and will guide you through the different features of this library.
 
 ## Why another download manager
 
@@ -90,11 +92,6 @@ However they are almost all abandoned:
   - No release since Feb '21
 
 As a result, I decided to write `trauma`.
-
-### Potential ideas for future versions
-
-- Resume download
-- Support for other download protocol (i.e.: FTP)
 
 [indicatif]: https://github.com/console-rs/indicatif
 [tokio]: https://tokio.rs/

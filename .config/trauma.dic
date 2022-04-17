@@ -13,3 +13,4 @@ ci
 downloader
 indicatif
 io
+resumable

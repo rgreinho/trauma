@@ -8,6 +8,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Added the ability to resume downloads. [#26]
+
+### Changed
+
+- Removed the `skip_existing` option. [#26]
+
 ## [1.1.0] - 2022-04-15
 
 ### Added
@@ -42,3 +50,4 @@ Initial version with the following feature set:
 [1.1.0]: https://github.com/rgreinho/trauma/releases/tag/1.1.0
 [#16]: https://github.com/rgreinho/trauma/pull/16
 [#24]: https://github.com/rgreinho/trauma/pull/24
+[#26]: https://github.com/rgreinho/trauma/pull/26
