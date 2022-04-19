@@ -2,17 +2,16 @@
 
 use crate::{download::Download, download::Status, download::Summary};
 use futures::stream::{self, StreamExt};
-use http::header::{ACCEPT_RANGES, RANGE};
+use http::header::RANGE;
 use http::StatusCode;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
 use std::fs;
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 use tracing::debug;
 
 /// Represents the download controller.
@@ -93,54 +92,44 @@ impl Downloader {
     ) -> Summary {
         // Create a download summary.
         let mut size_on_disk: u64 = 0;
-        let mut resumable = false;
+        let mut can_resume = false;
+        let output = self.directory.join(&download.filename);
         let mut summary = Summary::new(
             download.clone(),
             StatusCode::BAD_REQUEST,
             size_on_disk,
-            resumable,
+            can_resume,
         );
-        let output = self.directory.join(&download.filename);
 
         // If resumable is turned on...
         if self.resumable {
-            // Check whether the download is resumable.
-            let res = match client.head(download.url.clone()).send().await {
-                Ok(res) => res,
+            can_resume = match download.is_resumable(client).await {
+                Ok(r) => r,
                 Err(e) => {
                     return summary.fail(e);
                 }
             };
-            let headers = res.headers();
-            resumable = match headers.get(ACCEPT_RANGES) {
-                None => false,
-                Some(x) if x == "none" => false,
-                Some(_) => true,
-            };
 
-            // If we can resume...
-            if resumable {
-                // Check if there is a file on disk already.
-                if output.exists() {
-                    debug!("A file with the same name already exists at the destination.");
-                    // If so, check file length to know where to restart the download from.
-                    size_on_disk = match output.metadata() {
-                        Ok(m) => m.len(),
-                        Err(e) => {
-                            return summary.fail(e);
-                        }
+            // Check if there is a file on disk already.
+            if can_resume && output.exists() {
+                debug!("A file with the same name already exists at the destination.");
+                // If so, check file length to know where to restart the download from.
+                size_on_disk = match output.metadata() {
+                    Ok(m) => m.len(),
+                    Err(e) => {
+                        return summary.fail(e);
                     }
                 }
             }
 
             // Update the summary accordingly.
-            summary.set_resumable(resumable);
+            summary.set_resumable(can_resume);
         }
 
         // Request the file.
         debug!("Fetching {}", &download.url);
         let mut req = client.get(download.url.clone());
-        if self.resumable && resumable {
+        if self.resumable && can_resume {
             req = req.header(RANGE, format!("bytes={}-", size_on_disk));
         }
         let res = match req.send().await {
@@ -161,7 +150,7 @@ impl Downloader {
         // Update the summary with the collected details.
         let size = res.content_length().unwrap_or_default();
         let status = res.status();
-        summary = Summary::new(download.clone(), status, size, resumable);
+        summary = Summary::new(download.clone(), status, size, can_resume);
 
         // If there is nothing else to download for this file, we can return.
         if size == size_on_disk {
@@ -191,7 +180,12 @@ impl Downloader {
         };
 
         debug!("Creating destination file {:?}", &output);
-        let mut file = match File::options().append(true).create(true).open(output) {
+        let mut file = match OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(output)
+            .await
+        {
             Ok(file) => file,
             Err(e) => {
                 return summary.fail(e);
@@ -203,7 +197,7 @@ impl Downloader {
         let mut stream = res.bytes_stream();
         while let Some(item) = stream.next().await {
             // Retrieve chunk.
-            let chunk = match item {
+            let mut chunk = match item {
                 Ok(chunk) => chunk,
                 Err(e) => {
                     return summary.fail(e);
@@ -212,7 +206,7 @@ impl Downloader {
             pb.inc(chunk.len() as u64);
 
             // Write the chunk to disk.
-            match file.write_all(&chunk) {
+            match file.write_all_buf(&mut chunk).await {
                 Ok(_res) => (),
                 Err(e) => {
                     return summary.fail(e);

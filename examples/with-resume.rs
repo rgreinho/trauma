@@ -6,14 +6,13 @@
 //! cargo run -q --example with-resume
 //! ```
 
-use color_eyre::{eyre::Report, Result};
+use color_eyre::{eyre::eyre, eyre::Report, Result};
 use futures::stream::StreamExt;
 use rand::Rng;
 use reqwest::header::{ACCEPT_RANGES, RANGE};
 use std::fs;
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
+use tokio::{fs::File, io::AsyncWriteExt};
 use tracing_subscriber;
 use trauma::{download::Download, downloader::DownloaderBuilder};
 use url::Url;
@@ -46,27 +45,33 @@ async fn main() -> Result<(), Report> {
     };
     tracing::debug!("Is the file resumable: {:?}", &resumable);
 
-    // If resumable...
-    if resumable {
-        // Request a random amount of data to simulate a previously failed download.
-        let mut rng = rand::thread_rng();
-        let random_bytes: u8 = rng.gen();
-        let res = reqwest::Client::new()
-            .get(&avatar.to_string())
-            .header(RANGE, format!("bytes=0-{}", random_bytes))
-            .send()
-            .await?;
+    // We must ensure that the download is resumable to prove our point.
+    assert_eq!(resumable, true);
 
-        // Retrieve the bits.
-        let mut stream = res.bytes_stream();
-        let mut file = File::create(&output)?;
-        while let Some(item) = stream.next().await {
-            file.write_all(&item?)?;
-        }
+    // Request a random amount of data to simulate a previously failed download.
+    let mut rng = rand::thread_rng();
+    let random_bytes: u8 = rng.gen();
+    let res = reqwest::Client::new()
+        .get(&avatar.to_string())
+        .header(RANGE, format!("bytes=0-{}", random_bytes))
+        .send()
+        .await?;
+
+    // Retrieve the bits.
+    let mut stream = res.bytes_stream();
+    let mut file = File::create(&output).await?;
+    while let Some(item) = stream.next().await {
+        file.write_all_buf(&mut item?).await?;
     }
 
     // Download the rest of the bits with the [`Downloader`].
-    let dl = Download::new(&avatar, output.file_name().unwrap().to_str().unwrap());
+    let dl = Download::new(
+        &avatar,
+        output
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or(eyre!("invalid path terminator"))?,
+    );
     let downloads = vec![dl];
     let downloader = DownloaderBuilder::new()
         .directory(output.parent().unwrap().to_path_buf())
