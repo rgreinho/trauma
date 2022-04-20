@@ -98,16 +98,19 @@ pub struct Summary {
     size: u64,
     /// Status.
     status: Status,
+    /// Resumable.
+    resumable: bool,
 }
 
 impl Summary {
     /// Create a new [`Download`] [`Summary`].
-    pub fn new(download: Download, statuscode: StatusCode, size: u64) -> Self {
+    pub fn new(download: Download, statuscode: StatusCode, size: u64, resumable: bool) -> Self {
         Self {
             download,
             statuscode,
             size,
             status: Status::NotStarted,
+            resumable,
         }
     }
 
@@ -141,6 +144,17 @@ impl Summary {
             status: Status::Fail(format!("{}", msg)),
             ..self
         }
+    }
+
+    /// Set the summary's resumable.
+    pub fn set_resumable(&mut self, resumable: bool) {
+        self.resumable = resumable;
+    }
+
+    /// Get the summary's resumable.
+    #[must_use]
+    pub fn resumable(&self) -> bool {
+        self.resumable
     }
 }
 
