@@ -1,7 +1,9 @@
 //! Represents a file to be downloaded.
 
 use crate::Error;
+use http::header::ACCEPT_RANGES;
 use http::StatusCode;
+use reqwest_middleware::ClientWithMiddleware;
 use std::convert::TryFrom;
 use url::Url;
 
@@ -40,6 +42,20 @@ impl Download {
         Self {
             url: url.clone(),
             filename: String::from(filename),
+        }
+    }
+
+    /// Check whether the download is resumable.
+    pub async fn is_resumable(
+        &self,
+        client: &ClientWithMiddleware,
+    ) -> Result<bool, reqwest_middleware::Error> {
+        let res = client.head(self.url.clone()).send().await?;
+        let headers = res.headers();
+        match headers.get(ACCEPT_RANGES) {
+            None => Ok(false),
+            Some(x) if x == "none" => Ok(false),
+            Some(_) => Ok(true),
         }
     }
 }
