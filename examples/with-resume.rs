@@ -13,6 +13,7 @@ use reqwest::header::{ACCEPT_RANGES, RANGE};
 use std::fs;
 use std::path::PathBuf;
 use tokio::{fs::File, io::AsyncWriteExt};
+use tracing::debug;
 use tracing_subscriber;
 use trauma::{download::Download, downloader::DownloaderBuilder};
 use url::Url;
@@ -63,6 +64,7 @@ async fn main() -> Result<(), Report> {
     while let Some(item) = stream.next().await {
         file.write_all_buf(&mut item?).await?;
     }
+    debug!("Retrieved {} bytes.", random_bytes);
 
     // Download the rest of the bits with the [`Downloader`].
     let dl = Download::new(
@@ -73,7 +75,9 @@ async fn main() -> Result<(), Report> {
             .ok_or(eyre!("invalid path terminator"))?,
     );
     let downloads = vec![dl];
-    let downloader = DownloaderBuilder::new()
+
+    // Hidding the progress bar because of the logging.
+    let downloader = DownloaderBuilder::hidden()
         .directory(output.parent().unwrap().to_path_buf())
         .build();
     downloader.download(&downloads).await;

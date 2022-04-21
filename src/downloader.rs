@@ -4,6 +4,7 @@ use crate::{download::Download, download::Status, download::Summary};
 use futures::stream::{self, StreamExt};
 use http::header::RANGE;
 use http::StatusCode;
+use indicatif::ProgressDrawTarget;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -53,7 +54,10 @@ impl Downloader {
             .build();
 
         // Prepare the progress bar.
-        let multi = Arc::new(MultiProgress::new());
+        let multi = match self.style_options.clone().is_enabled() {
+            true => Arc::new(MultiProgress::new()),
+            false => Arc::new(MultiProgress::with_draw_target(ProgressDrawTarget::hidden())),
+        };
         let main = Arc::new(
             multi.add(
                 self.style_options
@@ -246,6 +250,15 @@ impl DownloaderBuilder {
         DownloaderBuilder::default()
     }
 
+    /// Convenience function to hide the progress bars.
+    pub fn hidden() -> Self {
+        let d = DownloaderBuilder::default();
+        d.style_options(StyleOptions::new(
+            ProgressBarOpts::hidden(),
+            ProgressBarOpts::hidden(),
+        ))
+    }
+
     /// Sets the directory where to store the [`Download`]s.
     pub fn directory(mut self, directory: PathBuf) -> Self {
         self.0.directory = directory;
@@ -334,6 +347,11 @@ impl StyleOptions {
     /// Set the options for the child progress bar.
     pub fn set_child(&mut self, child: ProgressBarOpts) {
         self.child = child;
+    }
+
+    /// Return `false` if neither the main nor the child bar is enabled.
+    pub fn is_enabled(self) -> bool {
+        self.main.enabled || self.child.enabled
     }
 }
 
@@ -440,6 +458,14 @@ impl ProgressBarOpts {
     /// Set to `true` to clear the progress bar upon completion.
     pub fn set_clear(&mut self, clear: bool) {
         self.clear = clear;
+    }
+
+    /// Create a new [`ProgressBarOpts`] which hides the progress bars.
+    pub fn hidden() -> Self {
+        Self {
+            enabled: false,
+            ..ProgressBarOpts::default()
+        }
     }
 }
 
