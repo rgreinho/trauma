@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.0.0] - 2022-04-21
+
 ### Added
 
 - Added the ability to resume downloads. [#26]
@@ -52,6 +54,7 @@ Initial version with the following feature set:
 
 [1.0.0]: https://github.com/rgreinho/trauma/releases/tag/1.0.0
 [1.1.0]: https://github.com/rgreinho/trauma/releases/tag/1.1.0
+[2.0.0]: https://github.com/rgreinho/trauma/releases/tag/2.0.0
 [#16]: https://github.com/rgreinho/trauma/pull/16
 [#24]: https://github.com/rgreinho/trauma/pull/24
 [#26]: https://github.com/rgreinho/trauma/pull/26
