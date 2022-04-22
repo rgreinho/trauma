@@ -42,7 +42,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-trauma = "1"
+trauma = "2"
 ```
 
 ## Quick start
