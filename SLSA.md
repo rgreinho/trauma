@@ -56,7 +56,7 @@ introducing signing.
 >   particular, immutable revision. In git, this is the {repo URL +
 >   branch/tag/ref + commit ID}.
 
-We are using `git` as our CVS, which meets these requirements, so we're good
+We are using `git` as our VCS, which meets these requirements, so we're good
 here ✅.
 
 ### ✅ [Build - Build service]
