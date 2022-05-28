@@ -69,10 +69,9 @@ impl Downloader {
         // Prepare the HTTP client.
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
 
-        let inner_client = proxy.map_or_else(
-            || reqwest::Client::new(),
-            |p| reqwest::Client::builder().proxy(p).build().unwrap(),
-        );
+        let inner_client = proxy.map_or_else(reqwest::Client::new, |p| {
+            reqwest::Client::builder().proxy(p).build().unwrap()
+        });
 
         let client = ClientBuilder::new(inner_client)
             .with(TracingMiddleware)
