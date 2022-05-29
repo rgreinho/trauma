@@ -46,9 +46,32 @@ impl Downloader {
 
     /// Starts the downloads.
     pub async fn download(&self, downloads: &[Download]) -> Vec<Summary> {
+        self.download_inner(downloads, None).await
+    }
+
+    /// Starts the downloads with proxy.
+    pub async fn download_with_proxy(
+        &self,
+        downloads: &[Download],
+        proxy: reqwest::Proxy,
+    ) -> Vec<Summary> {
+        self.download_inner(downloads, Some(proxy)).await
+    }
+
+    /// Starts the downloads.
+    pub async fn download_inner(
+        &self,
+        downloads: &[Download],
+        proxy: Option<reqwest::Proxy>,
+    ) -> Vec<Summary> {
         // Prepare the HTTP client.
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
-        let client = ClientBuilder::new(reqwest::Client::new())
+
+        let inner_client = proxy.map_or_else(reqwest::Client::new, |p| {
+            reqwest::Client::builder().proxy(p).build().unwrap()
+        });
+
+        let client = ClientBuilder::new(inner_client)
             .with(TracingMiddleware)
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build();

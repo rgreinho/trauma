@@ -16,7 +16,7 @@ keywords = ["http", "download", "async", "tokio", "indicatif"]
 [dependencies]
 futures = "0.3.21"
 indicatif = "0.17.0-rc.10"
-reqwest = { version = "0.11.9", features = ["stream"] }
+reqwest = { version = "0.11.9", features = ["stream", "socks"] }
 reqwest-middleware = "0.1.5"
 reqwest-retry = "0.1.4"
 reqwest-tracing = { version = "0.2.1", features = ["opentelemetry_0_17"] }
@@ -30,7 +30,7 @@ http = "0.2.6"
 [dev-dependencies]
 color-eyre = "0.6.1"
 comfy-table = "5.0.1"
-console =  "0.15"
+console = "0.15"
 opentelemetry = "0.17"
 rand = "0.8.5"
-tracing-subscriber = { version = "0.3", features = ["env-filter"]}
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

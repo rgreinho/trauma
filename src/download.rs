@@ -76,7 +76,9 @@ impl TryFrom<&Url> for Download {
             .map(String::from)
             .map(|filename| Download {
                 url: value.clone(),
-                filename,
+                filename: url::form_urlencoded::parse(filename.as_bytes())
+                    .map(|(key, val)| [key, val].concat())
+                    .collect(),
             })
             .ok_or_else(|| {
                 Error::InvalidUrl(format!("the url \"{}\" does not contain a filename", value))
