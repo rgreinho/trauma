@@ -46,44 +46,7 @@ impl Downloader {
 
     /// Starts the downloads.
     pub async fn download(&self, downloads: &[Download]) -> Vec<Summary> {
-        // Prepare the HTTP client.
-        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
-        let client = ClientBuilder::new(reqwest::Client::new())
-            .with(TracingMiddleware)
-            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-            .build();
-
-        // Prepare the progress bar.
-        let multi = match self.style_options.clone().is_enabled() {
-            true => Arc::new(MultiProgress::new()),
-            false => Arc::new(MultiProgress::with_draw_target(ProgressDrawTarget::hidden())),
-        };
-        let main = Arc::new(
-            multi.add(
-                self.style_options
-                    .main
-                    .clone()
-                    .to_progress_bar(downloads.len() as u64),
-            ),
-        );
-        main.tick();
-
-        // Download the files asynchronously.
-        let summaries = stream::iter(downloads)
-            .map(|d| self.fetch(&client, d, multi.clone(), main.clone()))
-            .buffer_unordered(self.concurrent_downloads)
-            .collect::<Vec<_>>()
-            .await;
-
-        // Finish the progress bar.
-        if self.style_options.main.clear {
-            main.finish_and_clear();
-        } else {
-            main.finish();
-        }
-
-        // Return the download summaries.
-        summaries
+        self.download_inner(downloads, None).await
     }
 
     /// Starts the downloads with proxy.
@@ -92,9 +55,22 @@ impl Downloader {
         downloads: &[Download],
         proxy: reqwest::Proxy,
     ) -> Vec<Summary> {
+        self.download_inner(downloads, Some(proxy)).await
+    }
+
+    /// Starts the downloads.
+    pub async fn download_inner(
+        &self,
+        downloads: &[Download],
+        proxy: Option<reqwest::Proxy>,
+    ) -> Vec<Summary> {
         // Prepare the HTTP client.
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
-        let inner_client = reqwest::Client::builder().proxy(proxy).build().unwrap();
+
+        let inner_client = proxy.map_or_else(reqwest::Client::new, |p| {
+            reqwest::Client::builder().proxy(p).build().unwrap()
+        });
+
         let client = ClientBuilder::new(inner_client)
             .with(TracingMiddleware)
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
