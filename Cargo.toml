@@ -29,7 +29,7 @@ http = "0.2.6"
 
 [dev-dependencies]
 color-eyre = "0.6.1"
-comfy-table = "5.0.1"
+comfy-table = "6.0.0"
 console = "0.15"
 opentelemetry = "0.17"
 rand = "0.8.5"
