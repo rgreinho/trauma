@@ -323,8 +323,7 @@ about a platform admin, so it may no apply here.
 [build - build as code]: https://slsa.dev/spec/v0.1/requirements#build-as-code
 [build - isolated]: https://slsa.dev/spec/v0.1/requirements#isolated
 [build - build service]: https://slsa.dev/spec/v0.1/requirements#build-service
-[build - ephemeral environment]:
-  https://slsa.dev/spec/v0.1/requirements#ephemeral-environment
+[build - ephemeral environment]: https://slsa.dev/spec/v0.1/requirements#ephemeral-environment
 [build - hermetic]: https://slsa.dev/spec/v0.1/requirements#hermetic
 [build - reproducible]: https://slsa.dev/spec/v0.1/requirements#reproducible
 [build - parameterless]: https://slsa.dev/spec/v0.1/requirements#parameterless
@@ -335,26 +334,16 @@ about a platform admin, so it may no apply here.
 [cosign]: https://github.com/sigstore/cosign
 [fulcio]: https://github.com/sigstore/fulcio
 [github-actions-demo]: https://github.com/slsa-framework/github-actions-demo
-[github hosted runners]:
-  https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
+[github hosted runners]: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
 [openid signing]: https://docs.sigstore.dev/cosign/openid_signing
-[provenance - authenticated]:
-  https://slsa.dev/spec/v0.1/requirements#authenticated
+[provenance - authenticated]: https://slsa.dev/spec/v0.1/requirements#authenticated
 [provenance - available]: https://slsa.dev/spec/v0.1/requirements#available
-[provenance - dependencies complete]:
-  https://slsa.dev/spec/v0.1/requirements#dependencies-complete
-[provenance - non-falsifiable]:
-  https://slsa.dev/spec/v0.1/requirements#non-falsifiable
-[provenance - service generated]:
-  https://slsa.dev/spec/v0.1/requirements#service-generated
+[provenance - dependencies complete]: https://slsa.dev/spec/v0.1/requirements#dependencies-complete
+[provenance - non-falsifiable]: https://slsa.dev/spec/v0.1/requirements#non-falsifiable
+[provenance - service generated]: https://slsa.dev/spec/v0.1/requirements#service-generated
 [rekor]: https://github.com/sigstore/rekor
-[slsa levels]: https://slsa.dev/spec/v0.1/levels
 [slsa]: https://slsa.dev/
-[source - retained indefinitely]:
-  https://slsa.dev/spec/v0.1/requirements#retained-indefinitely
-[source - two-person reviewed]:
-  https://slsa.dev/spec/v0.1/requirements#two-person-reviewed
-[source - version controlled]:
-  https://slsa.dev/spec/v0.1/requirements#version-controlled
-[source - verified history]:
-  https://slsa.dev/spec/v0.1/requirements#verified-history
+[source - retained indefinitely]: https://slsa.dev/spec/v0.1/requirements#retained-indefinitely
+[source - two-person reviewed]: https://slsa.dev/spec/v0.1/requirements#two-person-reviewed
+[source - version controlled]: https://slsa.dev/spec/v0.1/requirements#version-controlled
+[source - verified history]: https://slsa.dev/spec/v0.1/requirements#verified-history
