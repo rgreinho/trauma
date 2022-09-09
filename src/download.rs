@@ -98,7 +98,7 @@ impl TryFrom<&str> for Download {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Status {
     Fail(String),
     NotStarted,
