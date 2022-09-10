@@ -18,6 +18,7 @@ monitoring the process.
 
 - Library only
 - HTTP(S) downloads
+- Support download via proxies
 - Download files via providing a list of URLs
   - Ability to rename downloaded files
 - Ability to configure the download manager
