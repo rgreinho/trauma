@@ -8,6 +8,19 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.1.0] - 2022-09-10
+
+### Added
+
+- Added the ability to use a proxy. [#33]
+
+### Fixed
+
+- Fixed the filename parsing when constructing from URL. [#33]
+
+[#33]: https://github.com/rgreinho/trauma/pull/33
+[2.1.0]: https://github.com/rgreinho/trauma/releases/tag/2.1.0
+
 ## [2.0.0] - 2022-04-21
 
 ### Added
@@ -22,6 +35,10 @@ and this project adheres to
 
 - Fixed a bug preventing the progress bars to be disabled. [#29]
 
+[#26]: https://github.com/rgreinho/trauma/pull/26
+[#29]: https://github.com/rgreinho/trauma/pull/29
+[2.0.0]: https://github.com/rgreinho/trauma/releases/tag/2.0.0
+
 ## [1.1.0] - 2022-04-15
 
 ### Added
@@ -34,6 +51,10 @@ and this project adheres to
   - Leave them on the screen or clear them upon completion
   - Hide any or both of them
   - Add preconfigured styles
+
+[#16]: https://github.com/rgreinho/trauma/pull/16
+[#24]: https://github.com/rgreinho/trauma/pull/24
+[1.1.0]: https://github.com/rgreinho/trauma/releases/tag/1.1.0
 
 ## [1.0.0] - 2022-03-29
 
@@ -53,9 +74,3 @@ Initial version with the following feature set:
   - Display the total progress
 
 [1.0.0]: https://github.com/rgreinho/trauma/releases/tag/1.0.0
-[1.1.0]: https://github.com/rgreinho/trauma/releases/tag/1.1.0
-[2.0.0]: https://github.com/rgreinho/trauma/releases/tag/2.0.0
-[#16]: https://github.com/rgreinho/trauma/pull/16
-[#24]: https://github.com/rgreinho/trauma/pull/24
-[#26]: https://github.com/rgreinho/trauma/pull/26
-[#29]: https://github.com/rgreinho/trauma/pull/29
