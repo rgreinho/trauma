@@ -30,6 +30,6 @@ http = "0.2.6"
 color-eyre = "0.6.1"
 comfy-table = "6.0.0"
 console = "0.15"
-opentelemetry = "0.17"
+opentelemetry = "0.18"
 rand = "0.8.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
