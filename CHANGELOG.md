@@ -8,6 +8,19 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.1.1] - 2022-11-19
+
+### Fixed
+
+- Fixed a bug preventing the progress bars to be hidden. [#45]
+
+### Changed
+
+- Upgraded [indicatif] from 0.17.0-rc.10 to 0.17.2. [#45]
+
+[#45]: https://github.com/rgreinho/trauma/pull/45
+[2.1.1]: https://github.com/rgreinho/trauma/releases/tag/2.1.1
+
 ## [2.1.0] - 2022-09-10
 
 ### Added
