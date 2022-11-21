@@ -22,7 +22,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Run the unit/doc tests
         uses: actions-rs/cargo@v1
         with:
@@ -50,7 +50,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: rustup component add clippy rustfmt
       - name: Check the code formatting
         uses: actions-rs/cargo@v1
@@ -78,7 +78,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: build
@@ -99,7 +99,7 @@ jobs:
   #         profile: minimal
   #         toolchain: stable
   #         override: true
-  #     - uses: Swatinem/rust-cache@v1
+  #     - uses: Swatinem/rust-cache@v2
 
   #     # Generate attestation.
   #     - uses: actions-rs/cargo@v1
@@ -143,7 +143,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions/download-artifact@v3
       - name: Get Changelog Entry
         id: changelog_reader
