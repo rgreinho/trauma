@@ -4,31 +4,14 @@ use crate::{download::Download, download::Status, download::Summary};
 use futures::stream::{self, StreamExt};
 use http::{header::RANGE, StatusCode};
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
-use reqwest::{Request, Response};
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware, Result};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
-use reqwest_tracing::{
-    default_on_request_end, reqwest_otel_span, ReqwestOtelSpanBackend, TracingMiddleware,
-};
-use std::{fs, path::PathBuf, sync::Arc, time::Instant};
-use task_local_extensions::Extensions;
+use reqwest_tracing::TracingMiddleware;
+use std::{fs, path::PathBuf, sync::Arc};
 use tokio::{fs::OpenOptions, io::AsyncWriteExt};
-use tracing::{debug, Span};
+use tracing::debug;
 
 pub struct TimeTrace;
-
-impl ReqwestOtelSpanBackend for TimeTrace {
-    fn on_request_start(req: &Request, extension: &mut Extensions) -> Span {
-        extension.insert(Instant::now());
-        reqwest_otel_span!(req, time_elapsed = tracing::field::Empty)
-    }
-
-    fn on_request_end(span: &Span, outcome: &Result<Response>, extension: &mut Extensions) {
-        let time_elapsed = extension.get::<Instant>().unwrap().elapsed().as_millis() as i64;
-        default_on_request_end(span, outcome);
-        span.record("time_elapsed", time_elapsed);
-    }
-}
 
 /// Represents the download controller.
 ///
@@ -87,7 +70,9 @@ impl Downloader {
         });
 
         let client = ClientBuilder::new(inner_client)
-            .with(TracingMiddleware::<TimeTrace>::new())
+            // Trace HTTP requests. See the tracing crate to make use of these traces.
+            .with(TracingMiddleware::default())
+            // Retry failed requests.
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
             .build();
 
