@@ -14,7 +14,8 @@ labels: "kind/feature"
 
 ## Expected Behavior
 
-<!-- Tell us how it should work, how it differs from the current implementation. -->
+<!-- Tell us how it should work, how it differs from the current implementation.
+ -->
 
 ## Possible Solution
 

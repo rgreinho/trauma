@@ -57,7 +57,8 @@ Instructions:
 
 COMMIT=$(git log -1 --pretty=format:"%h %s %d")
 FIREFOX=$(/Applications/Firefox.app/Contents/MacOS/firefox --version 2>/dev/null||true)
-CHROME=$(/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version 2>/dev/null||true)
+CHROME=$(/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --version 2>/dev/null||true)
 SYSTEM=$(system_profiler SPSoftwareDataType|grep macOS | xargs)
 OUTPUT="$(cat <<EOF
 Last commit:
