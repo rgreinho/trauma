@@ -1,10 +1,9 @@
 //! Represents a file to be downloaded.
 
 use crate::Error;
-use http::{header::ACCEPT_RANGES, StatusCode};
+use reqwest::{header::ACCEPT_RANGES, StatusCode, Url};
 use reqwest_middleware::ClientWithMiddleware;
 use std::convert::TryFrom;
-use url::Url;
 
 /// Represents a file to be downloaded.
 #[derive(Debug, Clone)]
@@ -78,7 +77,7 @@ impl TryFrom<&Url> for Download {
             .map(String::from)
             .map(|filename| Download {
                 url: value.clone(),
-                filename: url::form_urlencoded::parse(filename.as_bytes())
+                filename: form_urlencoded::parse(filename.as_bytes())
                     .map(|(key, val)| [key, val].concat())
                     .collect(),
             })

@@ -2,9 +2,9 @@
 
 use crate::download::{Download, Status, Summary};
 use futures::stream::{self, StreamExt};
-use http::{
-    header::{IntoHeaderName, RANGE},
-    HeaderMap, HeaderValue, StatusCode,
+use reqwest::{
+    header::{IntoHeaderName, RANGE,HeaderMap, HeaderValue},
+   StatusCode,
 };
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
