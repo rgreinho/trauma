@@ -37,8 +37,7 @@ async fn main() -> Result<(), Error> {
                 format!(
                     "{{bar:40.cyan/blue}} {{percent:>2.magenta}}{} ● {{eta_precise:.blue}}",
                     style("%").magenta(),
-                )
-                .into(),
+                ),
             ),
             Some("●◕◑◔○".into()),
             true,
@@ -54,6 +53,8 @@ async fn main() -> Result<(), Error> {
         .directory(PathBuf::from("output"))
         .style_options(style_opts)
         .build();
-    downloader.download(&downloads).await;
+    downloader
+        .download(&downloads)
+        .await;
     Ok(())
 }

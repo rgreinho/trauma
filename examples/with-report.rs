@@ -20,7 +20,8 @@ async fn main() -> Result<(), Report> {
     color_eyre::install()?;
 
     // Download the file(s).
-    let reqwest_rs = "https://github.com/seanmonstar/reqwest/archive/refs/tags/v0.11.9.zip";
+    let reqwest_rs =
+        "https://github.com/seanmonstar/reqwest/archive/refs/tags/v0.11.9.zip";
     let fake = format!("{}.fake", &reqwest_rs);
     let downloads = vec![
         Download::try_from(reqwest_rs).unwrap(),
@@ -30,7 +31,9 @@ async fn main() -> Result<(), Report> {
     let downloader = DownloaderBuilder::new()
         .directory(PathBuf::from("output"))
         .build();
-    let summaries = downloader.download(&downloads).await;
+    let summaries = downloader
+        .download(&downloads)
+        .await;
 
     // Display results.
     display_summary(&summaries);
@@ -66,7 +69,6 @@ fn display_summary(summaries: &[Summary]) {
             &status,
             &error,
         ]);
-        ()
     });
     println!("{table}");
 }

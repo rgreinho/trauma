@@ -1,8 +1,11 @@
 //! Represents the download controller.
 
-use crate::{download::Download, download::Status, download::Summary};
+use crate::download::{Download, Status, Summary};
 use futures::stream::{self, StreamExt};
-use http::{header::RANGE, StatusCode};
+use http::{
+    header::{IntoHeaderName, RANGE},
+    HeaderMap, HeaderValue, StatusCode,
+};
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -36,6 +39,7 @@ pub struct Downloader {
     style_options: StyleOptions,
     /// Resume the download if necessary and possible.
     resumable: bool,
+    headers: Option<HeaderMap>,
 }
 
 impl Downloader {
@@ -44,7 +48,8 @@ impl Downloader {
 
     /// Starts the downloads.
     pub async fn download(&self, downloads: &[Download]) -> Vec<Summary> {
-        self.download_inner(downloads, None).await
+        self.download_inner(downloads, None)
+            .await
     }
 
     /// Starts the downloads with proxy.
@@ -53,7 +58,8 @@ impl Downloader {
         downloads: &[Download],
         proxy: reqwest::Proxy,
     ) -> Vec<Summary> {
-        self.download_inner(downloads, Some(proxy)).await
+        self.download_inner(downloads, Some(proxy))
+            .await
     }
 
     /// Starts the downloads.
@@ -63,10 +69,14 @@ impl Downloader {
         proxy: Option<reqwest::Proxy>,
     ) -> Vec<Summary> {
         // Prepare the HTTP client.
-        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
+        let retry_policy =
+            ExponentialBackoff::builder().build_with_max_retries(self.retries);
 
         let inner_client = proxy.map_or_else(reqwest::Client::new, |p| {
-            reqwest::Client::builder().proxy(p).build().unwrap()
+            reqwest::Client::builder()
+                .proxy(p)
+                .build()
+                .unwrap()
         });
 
         let client = ClientBuilder::new(inner_client)
@@ -77,9 +87,15 @@ impl Downloader {
             .build();
 
         // Prepare the progress bar.
-        let multi = match self.style_options.clone().is_enabled() {
+        let multi = match self
+            .style_options
+            .clone()
+            .is_enabled()
+        {
             true => Arc::new(MultiProgress::new()),
-            false => Arc::new(MultiProgress::with_draw_target(ProgressDrawTarget::hidden())),
+            false => Arc::new(MultiProgress::with_draw_target(
+                ProgressDrawTarget::hidden(),
+            )),
         };
         let main = Arc::new(
             multi.add(
@@ -120,7 +136,9 @@ impl Downloader {
         // Create a download summary.
         let mut size_on_disk: u64 = 0;
         let mut can_resume = false;
-        let output = self.directory.join(&download.filename);
+        let output = self
+            .directory
+            .join(&download.filename);
         let mut summary = Summary::new(
             download.clone(),
             StatusCode::BAD_REQUEST,
@@ -130,7 +148,10 @@ impl Downloader {
 
         // If resumable is turned on...
         if self.resumable {
-            can_resume = match download.is_resumable(client).await {
+            can_resume = match download
+                .is_resumable(client)
+                .await
+            {
                 Ok(r) => r,
                 Err(e) => {
                     return summary.fail(e);
@@ -139,7 +160,9 @@ impl Downloader {
 
             // Check if there is a file on disk already.
             if can_resume && output.exists() {
-                debug!("A file with the same name already exists at the destination.");
+                debug!(
+                    "A file with the same name already exists at the destination."
+                );
                 // If so, check file length to know where to restart the download from.
                 size_on_disk = match output.metadata() {
                     Ok(m) => m.len(),
@@ -159,6 +182,11 @@ impl Downloader {
         if self.resumable && can_resume {
             req = req.header(RANGE, format!("bytes={}-", size_on_disk));
         }
+
+        if let Some(ref h) = self.headers {
+            req = req.headers(h.to_owned());
+        }
+
         let res = match req.send().await {
             Ok(res) => res,
             Err(e) => {
@@ -175,7 +203,9 @@ impl Downloader {
         };
 
         // Update the summary with the collected details.
-        let size = res.content_length().unwrap_or_default();
+        let size = res
+            .content_length()
+            .unwrap_or_default();
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
@@ -233,7 +263,10 @@ impl Downloader {
             pb.inc(chunk.len() as u64);
 
             // Write the chunk to disk.
-            match file.write_all_buf(&mut chunk).await {
+            match file
+                .write_all_buf(&mut chunk)
+                .await
+            {
                 Ok(_res) => (),
                 Err(e) => {
                     return summary.fail(e);
@@ -306,6 +339,79 @@ impl DownloaderBuilder {
         self
     }
 
+    fn new_header(&self) -> HeaderMap {
+        match self.0.headers {
+            Some(ref h) => h.to_owned(),
+            _ => HeaderMap::new(),
+        }
+    }
+
+    /// Add the http headers.
+    ///
+    /// You need to pass in a `HeaderMap`, not a `HeaderName`.
+    /// `HeaderMap` is a set of http headers.
+    ///
+    /// You can call `.headers()` multiple times and all `HeaderMap` will be merged into a single one.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use reqwest::header::{self, HeaderValue, HeaderMap};
+    /// use trauma::downloader::DownloaderBuilder;
+    ///
+    /// let ua = HeaderValue::from_str("curl/7.87").expect("Invalid UA");
+    ///
+    /// let builder = DownloaderBuilder::new()
+    ///     .headers(HeaderMap::from_iter([(header::USER_AGENT, ua)]))
+    ///     .build();
+    /// ```
+    ///
+    /// See also [`header()`].
+    ///
+    /// [`header()`]: DownloaderBuilder::header
+    pub fn headers(mut self, headers: HeaderMap) -> Self {
+        let mut new = self.new_header();
+        new.extend(headers);
+
+        self.0.headers = Some(new);
+        self
+    }
+
+    /// Add the http header
+    ///
+    /// # Example
+    ///
+    /// You can use the `.header()` chain to add multiple headers
+    ///
+    /// ```
+    /// use reqwest::header::{self, HeaderValue};
+    /// use trauma::downloader::DownloaderBuilder;
+    ///
+    /// const FIREFOX_UA: &str =
+    /// "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/109.0";
+    ///
+    /// let ua = HeaderValue::from_str(FIREFOX_UA).expect("Invalid UA");
+    /// let auth = HeaderValue::from_str("Basic aGk6MTIzNDU2Cg==").expect("Invalid auth");
+    ///
+    /// let builder = DownloaderBuilder::new()
+    ///     .header(header::USER_AGENT, ua)
+    ///     .header(header::AUTHORIZATION, auth)
+    ///     .build();
+    /// ```
+    ///
+    /// If you need to pass in a `HeaderMap`, instead of calling `.header()` multiple times.
+    /// See also [`headers()`].
+    ///
+    /// [`headers()`]: DownloaderBuilder::headers
+    pub fn header<K: IntoHeaderName>(mut self, name: K, value: HeaderValue) -> Self {
+        let mut new = self.new_header();
+
+        new.insert(name, value);
+
+        self.0.headers = Some(new);
+        self
+    }
+
     /// Create the [`Downloader`] with the specified options.
     pub fn build(self) -> Downloader {
         Downloader {
@@ -314,6 +420,7 @@ impl DownloaderBuilder {
             concurrent_downloads: self.0.concurrent_downloads,
             style_options: self.0.style_options,
             resumable: self.0.resumable,
+            headers: self.0.headers,
         }
     }
 }
@@ -326,6 +433,7 @@ impl Default for DownloaderBuilder {
             concurrent_downloads: Downloader::DEFAULT_CONCURRENT_DOWNLOADS,
             style_options: StyleOptions::default(),
             resumable: true,
+            headers: None,
         })
     }
 }
@@ -448,7 +556,9 @@ impl ProgressBarOpts {
     pub fn to_progress_style(self) -> ProgressStyle {
         let mut style = ProgressStyle::default_bar();
         if let Some(template) = self.template {
-            style = style.template(&template).unwrap();
+            style = style
+                .template(&template)
+                .unwrap();
         }
         if let Some(progress_chars) = self.progress_chars {
             style = style.progress_chars(&progress_chars);
