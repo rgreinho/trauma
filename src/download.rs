@@ -48,10 +48,7 @@ impl Download {
         &self,
         client: &ClientWithMiddleware,
     ) -> Result<bool, reqwest_middleware::Error> {
-        let res = client
-            .head(self.url.clone())
-            .send()
-            .await?;
+        let res = client.head(self.url.clone()).send().await?;
         let headers = res.headers();
         match headers.get(ACCEPT_RANGES) {
             None => Ok(false),
@@ -82,10 +79,7 @@ impl TryFrom<&Url> for Download {
                     .collect(),
             })
             .ok_or_else(|| {
-                Error::InvalidUrl(format!(
-                    "the url \"{}\" does not contain a filename",
-                    value
-                ))
+                Error::InvalidUrl(format!("the url \"{}\" does not contain a filename", value))
             })
     }
 }
@@ -96,10 +90,7 @@ impl TryFrom<&str> for Download {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Url::parse(value)
             .map_err(|e| {
-                Error::InvalidUrl(format!(
-                    "the url \"{}\" cannot be parsed: {}",
-                    value, e
-                ))
+                Error::InvalidUrl(format!("the url \"{}\" cannot be parsed: {}", value, e))
             })
             .and_then(|u| Download::try_from(&u))
     }
@@ -129,12 +120,7 @@ pub struct Summary {
 
 impl Summary {
     /// Create a new [`Download`] [`Summary`].
-    pub fn new(
-        download: Download,
-        statuscode: StatusCode,
-        size: u64,
-        resumable: bool,
-    ) -> Self {
+    pub fn new(download: Download, statuscode: StatusCode, size: u64, resumable: bool) -> Self {
         Self {
             download,
             statuscode,

@@ -32,8 +32,7 @@ async fn main() -> Result<(), Report> {
         .init();
 
     // Prepare the download.
-    let avatar =
-        Url::parse("https://avatars.githubusercontent.com/u/6969134?v=4").unwrap();
+    let avatar = Url::parse("https://avatars.githubusercontent.com/u/6969134?v=4").unwrap();
     let output = PathBuf::from("output/avatar.jpg");
     fs::create_dir_all(output.parent().unwrap())?;
 
@@ -66,8 +65,7 @@ async fn main() -> Result<(), Report> {
     let mut stream = res.bytes_stream();
     let mut file = File::create(&output).await?;
     while let Some(item) = stream.next().await {
-        file.write_all_buf(&mut item?)
-            .await?;
+        file.write_all_buf(&mut item?).await?;
     }
     debug!("Retrieved {} bytes.", random_bytes);
 
@@ -83,16 +81,9 @@ async fn main() -> Result<(), Report> {
 
     // Hidding the progress bar because of the logging.
     let downloader = DownloaderBuilder::hidden()
-        .directory(
-            output
-                .parent()
-                .unwrap()
-                .to_path_buf(),
-        )
+        .directory(output.parent().unwrap().to_path_buf())
         .build();
-    downloader
-        .download(&downloads)
-        .await;
+    downloader.download(&downloads).await;
 
     Ok(())
 }

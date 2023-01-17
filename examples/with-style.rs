@@ -33,12 +33,10 @@ async fn main() -> Result<(), Error> {
         // - https://changaco.oy.lc/unicode-progress-bars/
         // - https://emojistock.com/circle-symbols/
         ProgressBarOpts::new(
-            Some(
-                format!(
-                    "{{bar:40.cyan/blue}} {{percent:>2.magenta}}{} ● {{eta_precise:.blue}}",
-                    style("%").magenta(),
-                ),
-            ),
+            Some(format!(
+                "{{bar:40.cyan/blue}} {{percent:>2.magenta}}{} ● {{eta_precise:.blue}}",
+                style("%").magenta(),
+            )),
             Some("●◕◑◔○".into()),
             true,
             false,
@@ -53,8 +51,6 @@ async fn main() -> Result<(), Error> {
         .directory(PathBuf::from("output"))
         .style_options(style_opts)
         .build();
-    downloader
-        .download(&downloads)
-        .await;
+    downloader.download(&downloads).await;
     Ok(())
 }

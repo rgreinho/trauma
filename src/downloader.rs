@@ -2,11 +2,11 @@
 
 use crate::download::{Download, Status, Summary};
 use futures::stream::{self, StreamExt};
-use reqwest::{
-    header::{IntoHeaderName, RANGE,HeaderMap, HeaderValue},
-   StatusCode,
-};
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
+use reqwest::{
+    header::{HeaderMap, HeaderValue, IntoHeaderName, RANGE},
+    StatusCode,
+};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
@@ -48,8 +48,7 @@ impl Downloader {
 
     /// Starts the downloads.
     pub async fn download(&self, downloads: &[Download]) -> Vec<Summary> {
-        self.download_inner(downloads, None)
-            .await
+        self.download_inner(downloads, None).await
     }
 
     /// Starts the downloads with proxy.
@@ -58,8 +57,7 @@ impl Downloader {
         downloads: &[Download],
         proxy: reqwest::Proxy,
     ) -> Vec<Summary> {
-        self.download_inner(downloads, Some(proxy))
-            .await
+        self.download_inner(downloads, Some(proxy)).await
     }
 
     /// Starts the downloads.
@@ -69,14 +67,10 @@ impl Downloader {
         proxy: Option<reqwest::Proxy>,
     ) -> Vec<Summary> {
         // Prepare the HTTP client.
-        let retry_policy =
-            ExponentialBackoff::builder().build_with_max_retries(self.retries);
+        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
 
         let inner_client = proxy.map_or_else(reqwest::Client::new, |p| {
-            reqwest::Client::builder()
-                .proxy(p)
-                .build()
-                .unwrap()
+            reqwest::Client::builder().proxy(p).build().unwrap()
         });
 
         let client = ClientBuilder::new(inner_client)
@@ -87,15 +81,9 @@ impl Downloader {
             .build();
 
         // Prepare the progress bar.
-        let multi = match self
-            .style_options
-            .clone()
-            .is_enabled()
-        {
+        let multi = match self.style_options.clone().is_enabled() {
             true => Arc::new(MultiProgress::new()),
-            false => Arc::new(MultiProgress::with_draw_target(
-                ProgressDrawTarget::hidden(),
-            )),
+            false => Arc::new(MultiProgress::with_draw_target(ProgressDrawTarget::hidden())),
         };
         let main = Arc::new(
             multi.add(
@@ -136,9 +124,7 @@ impl Downloader {
         // Create a download summary.
         let mut size_on_disk: u64 = 0;
         let mut can_resume = false;
-        let output = self
-            .directory
-            .join(&download.filename);
+        let output = self.directory.join(&download.filename);
         let mut summary = Summary::new(
             download.clone(),
             StatusCode::BAD_REQUEST,
@@ -148,10 +134,7 @@ impl Downloader {
 
         // If resumable is turned on...
         if self.resumable {
-            can_resume = match download
-                .is_resumable(client)
-                .await
-            {
+            can_resume = match download.is_resumable(client).await {
                 Ok(r) => r,
                 Err(e) => {
                     return summary.fail(e);
@@ -160,9 +143,7 @@ impl Downloader {
 
             // Check if there is a file on disk already.
             if can_resume && output.exists() {
-                debug!(
-                    "A file with the same name already exists at the destination."
-                );
+                debug!("A file with the same name already exists at the destination.");
                 // If so, check file length to know where to restart the download from.
                 size_on_disk = match output.metadata() {
                     Ok(m) => m.len(),
@@ -203,9 +184,7 @@ impl Downloader {
         };
 
         // Update the summary with the collected details.
-        let size = res
-            .content_length()
-            .unwrap_or_default();
+        let size = res.content_length().unwrap_or_default();
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
@@ -263,10 +242,7 @@ impl Downloader {
             pb.inc(chunk.len() as u64);
 
             // Write the chunk to disk.
-            match file
-                .write_all_buf(&mut chunk)
-                .await
-            {
+            match file.write_all_buf(&mut chunk).await {
                 Ok(_res) => (),
                 Err(e) => {
                     return summary.fail(e);
@@ -556,9 +532,7 @@ impl ProgressBarOpts {
     pub fn to_progress_style(self) -> ProgressStyle {
         let mut style = ProgressStyle::default_bar();
         if let Some(template) = self.template {
-            style = style
-                .template(&template)
-                .unwrap();
+            style = style.template(&template).unwrap();
         }
         if let Some(progress_chars) = self.progress_chars {
             style = style.progress_chars(&progress_chars);
