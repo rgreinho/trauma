@@ -28,7 +28,7 @@ impl Download {
     /// ```no_run
     /// # use color_eyre::{eyre::Report, Result};
     /// use trauma::download::Download;
-    /// use url::Url;
+    /// use reqwest::Url;
     ///
     /// # fn main() -> Result<(), Report> {
     /// Download::try_from("https://example.com/file-0.1.2.zip")?;
