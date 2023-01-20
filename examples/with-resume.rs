@@ -6,17 +6,20 @@
 //! cargo run -q --example with-resume
 //! ```
 
-use color_eyre::{eyre::eyre, eyre::Report, Result};
+use color_eyre::{
+    eyre::{eyre, Report},
+    Result,
+};
 use futures::stream::StreamExt;
 use rand::Rng;
-use reqwest::header::{ACCEPT_RANGES, RANGE};
-use std::fs;
-use std::path::PathBuf;
+use reqwest::{
+    header::{ACCEPT_RANGES, RANGE},
+    Url,
+};
+use std::{fs, path::PathBuf};
 use tokio::{fs::File, io::AsyncWriteExt};
 use tracing::debug;
-use tracing_subscriber;
 use trauma::{download::Download, downloader::DownloaderBuilder};
-use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<(), Report> {
@@ -47,7 +50,7 @@ async fn main() -> Result<(), Report> {
     tracing::debug!("Is the file resumable: {:?}", &resumable);
 
     // We must ensure that the download is resumable to prove our point.
-    assert_eq!(resumable, true);
+    assert!(resumable);
 
     // Request a random amount of data to simulate a previously failed download.
     let mut rng = rand::thread_rng();

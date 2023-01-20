@@ -33,13 +33,10 @@ async fn main() -> Result<(), Error> {
         // - https://changaco.oy.lc/unicode-progress-bars/
         // - https://emojistock.com/circle-symbols/
         ProgressBarOpts::new(
-            Some(
-                format!(
-                    "{{bar:40.cyan/blue}} {{percent:>2.magenta}}{} ● {{eta_precise:.blue}}",
-                    style("%").magenta(),
-                )
-                .into(),
-            ),
+            Some(format!(
+                "{{bar:40.cyan/blue}} {{percent:>2.magenta}}{} ● {{eta_precise:.blue}}",
+                style("%").magenta(),
+            )),
             Some("●◕◑◔○".into()),
             true,
             false,

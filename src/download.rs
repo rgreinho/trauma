@@ -1,11 +1,9 @@
 //! Represents a file to be downloaded.
 
 use crate::Error;
-use http::header::ACCEPT_RANGES;
-use http::StatusCode;
+use reqwest::{header::ACCEPT_RANGES, StatusCode, Url};
 use reqwest_middleware::ClientWithMiddleware;
 use std::convert::TryFrom;
-use url::Url;
 
 /// Represents a file to be downloaded.
 #[derive(Debug, Clone)]
@@ -30,7 +28,7 @@ impl Download {
     /// ```no_run
     /// # use color_eyre::{eyre::Report, Result};
     /// use trauma::download::Download;
-    /// use url::Url;
+    /// use reqwest::Url;
     ///
     /// # fn main() -> Result<(), Report> {
     /// Download::try_from("https://example.com/file-0.1.2.zip")?;
@@ -76,7 +74,7 @@ impl TryFrom<&Url> for Download {
             .map(String::from)
             .map(|filename| Download {
                 url: value.clone(),
-                filename: url::form_urlencoded::parse(filename.as_bytes())
+                filename: form_urlencoded::parse(filename.as_bytes())
                     .map(|(key, val)| [key, val].concat())
                     .collect(),
             })
@@ -180,7 +178,7 @@ impl Summary {
 mod test {
     use super::*;
 
-    const DOMAIN: &'static str = "http://domain.com/file.zip";
+    const DOMAIN: &str = "http://domain.com/file.zip";
 
     #[test]
     fn test_try_from_url() {

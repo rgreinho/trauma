@@ -1,9 +1,12 @@
 //! Represents the download controller.
 
-use crate::{download::Download, download::Status, download::Summary};
+use crate::download::{Download, Status, Summary};
 use futures::stream::{self, StreamExt};
-use http::{header::RANGE, StatusCode};
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget, ProgressStyle};
+use reqwest::{
+    header::{HeaderMap, HeaderValue, IntoHeaderName, RANGE},
+    StatusCode,
+};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
@@ -36,6 +39,7 @@ pub struct Downloader {
     style_options: StyleOptions,
     /// Resume the download if necessary and possible.
     resumable: bool,
+    headers: Option<HeaderMap>,
 }
 
 impl Downloader {
@@ -159,6 +163,11 @@ impl Downloader {
         if self.resumable && can_resume {
             req = req.header(RANGE, format!("bytes={}-", size_on_disk));
         }
+
+        if let Some(ref h) = self.headers {
+            req = req.headers(h.to_owned());
+        }
+
         let res = match req.send().await {
             Ok(res) => res,
             Err(e) => {
@@ -306,6 +315,79 @@ impl DownloaderBuilder {
         self
     }
 
+    fn new_header(&self) -> HeaderMap {
+        match self.0.headers {
+            Some(ref h) => h.to_owned(),
+            _ => HeaderMap::new(),
+        }
+    }
+
+    /// Add the http headers.
+    ///
+    /// You need to pass in a `HeaderMap`, not a `HeaderName`.
+    /// `HeaderMap` is a set of http headers.
+    ///
+    /// You can call `.headers()` multiple times and all `HeaderMap` will be merged into a single one.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use reqwest::header::{self, HeaderValue, HeaderMap};
+    /// use trauma::downloader::DownloaderBuilder;
+    ///
+    /// let ua = HeaderValue::from_str("curl/7.87").expect("Invalid UA");
+    ///
+    /// let builder = DownloaderBuilder::new()
+    ///     .headers(HeaderMap::from_iter([(header::USER_AGENT, ua)]))
+    ///     .build();
+    /// ```
+    ///
+    /// See also [`header()`].
+    ///
+    /// [`header()`]: DownloaderBuilder::header
+    pub fn headers(mut self, headers: HeaderMap) -> Self {
+        let mut new = self.new_header();
+        new.extend(headers);
+
+        self.0.headers = Some(new);
+        self
+    }
+
+    /// Add the http header
+    ///
+    /// # Example
+    ///
+    /// You can use the `.header()` chain to add multiple headers
+    ///
+    /// ```
+    /// use reqwest::header::{self, HeaderValue};
+    /// use trauma::downloader::DownloaderBuilder;
+    ///
+    /// const FIREFOX_UA: &str =
+    /// "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/109.0";
+    ///
+    /// let ua = HeaderValue::from_str(FIREFOX_UA).expect("Invalid UA");
+    /// let auth = HeaderValue::from_str("Basic aGk6MTIzNDU2Cg==").expect("Invalid auth");
+    ///
+    /// let builder = DownloaderBuilder::new()
+    ///     .header(header::USER_AGENT, ua)
+    ///     .header(header::AUTHORIZATION, auth)
+    ///     .build();
+    /// ```
+    ///
+    /// If you need to pass in a `HeaderMap`, instead of calling `.header()` multiple times.
+    /// See also [`headers()`].
+    ///
+    /// [`headers()`]: DownloaderBuilder::headers
+    pub fn header<K: IntoHeaderName>(mut self, name: K, value: HeaderValue) -> Self {
+        let mut new = self.new_header();
+
+        new.insert(name, value);
+
+        self.0.headers = Some(new);
+        self
+    }
+
     /// Create the [`Downloader`] with the specified options.
     pub fn build(self) -> Downloader {
         Downloader {
@@ -314,6 +396,7 @@ impl DownloaderBuilder {
             concurrent_downloads: self.0.concurrent_downloads,
             style_options: self.0.style_options,
             resumable: self.0.resumable,
+            headers: self.0.headers,
         }
     }
 }
@@ -326,6 +409,7 @@ impl Default for DownloaderBuilder {
             concurrent_downloads: Downloader::DEFAULT_CONCURRENT_DOWNLOADS,
             style_options: StyleOptions::default(),
             resumable: true,
+            headers: None,
         })
     }
 }

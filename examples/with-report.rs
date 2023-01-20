@@ -66,7 +66,6 @@ fn display_summary(summaries: &[Summary]) {
             &status,
             &error,
         ]);
-        ()
     });
     println!("{table}");
 }
