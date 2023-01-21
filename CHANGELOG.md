@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.0] - 2022-01-21
+
+### Added
+
+- Added the ability to provide custom HTTP headers to the downloader. [#53]
+
+[#53]: https://github.com/rgreinho/trauma/pull/53
+[2.2.0]: https://github.com/rgreinho/trauma/releases/tag/2.2.0
+
 ## [2.1.1] - 2022-11-19
 
 ### Fixed
