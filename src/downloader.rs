@@ -184,7 +184,11 @@ impl Downloader {
         };
 
         // Update the summary with the collected details.
-        let size = res.content_length().unwrap_or_default();
+        let size = res.content_length().unwrap_or(u64::MAX);
+        // ^^^ The default u64 value is 0, which will instantly skip a download
+        //     For this reason we set it to an unreasonably high value instead
+        //     of using `unwrap_or_default`. This ensures downloads won't be
+        //     skipped for no reason.
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
