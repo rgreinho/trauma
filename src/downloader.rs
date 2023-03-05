@@ -264,6 +264,8 @@ impl Downloader {
         // Advance the main progress bar.
         main.inc(1);
 
+        // Create a new summary with the real download size
+        let summary = Summary::new(download.clone(), status, size_on_disk, can_resume);
         // Return the download summary.
         summary.with_status(Status::Success)
     }
