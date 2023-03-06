@@ -217,9 +217,9 @@ impl Downloader {
 
         debug!("Creating destination file {:?}", &output);
         let mut file = match OpenOptions::new()
-            .append(can_resume)
-            .write(true) 
             .create(true)
+            .write(true)
+            .append(can_resume)
             .open(output)
             .await
         {
