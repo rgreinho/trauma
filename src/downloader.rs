@@ -216,12 +216,6 @@ impl Downloader {
         };
 
         debug!("Creating destination file {:?}", &output);
-        // append: If we can't resume from where we left off,
-        //         we should overrwite the file and start again
-        //         This also prevents corrupting files by writing
-        //         to them again
-        // write:  We are writing to the file
-        // create: The file should be created if it doesn't exist
         let mut file = match OpenOptions::new()
             .append(can_resume)
             .write(true) 
@@ -272,7 +266,6 @@ impl Downloader {
         main.inc(1);
 
         // Create a new summary with the real download size
-        println!("Size on disk {}", size_on_disk);
         let summary = Summary::new(download.clone(), status, final_size, can_resume);
         // Return the download summary.
         summary.with_status(Status::Success)
