@@ -189,7 +189,7 @@ impl Downloader {
         summary = Summary::new(download.clone(), status, size, can_resume);
 
         // If there is nothing else to download for this file, we can return.
-        if size == size_on_disk {
+        if size_on_disk > 0 && size == size_on_disk {
             return summary.with_status(Status::Skipped(
                 "the file was already fully downloaded".into(),
             ));
@@ -217,8 +217,9 @@ impl Downloader {
 
         debug!("Creating destination file {:?}", &output);
         let mut file = match OpenOptions::new()
-            .append(true)
             .create(true)
+            .write(true)
+            .append(can_resume)
             .open(output)
             .await
         {
@@ -227,6 +228,8 @@ impl Downloader {
                 return summary.fail(e);
             }
         };
+
+        let mut final_size = size_on_disk;
 
         // Download the file chunk by chunk.
         debug!("Retrieving chunks...");
@@ -239,7 +242,9 @@ impl Downloader {
                     return summary.fail(e);
                 }
             };
-            pb.inc(chunk.len() as u64);
+            let chunk_size = chunk.len() as u64;
+            final_size += chunk_size;
+            pb.inc(chunk_size);
 
             // Write the chunk to disk.
             match file.write_all_buf(&mut chunk).await {
@@ -260,6 +265,8 @@ impl Downloader {
         // Advance the main progress bar.
         main.inc(1);
 
+        // Create a new summary with the real download size
+        let summary = Summary::new(download.clone(), status, final_size, can_resume);
         // Return the download summary.
         summary.with_status(Status::Success)
     }
