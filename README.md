@@ -26,6 +26,7 @@ monitoring the process.
   - Maximum simultaneous requests
   - Number of retries
   - Resume downloads (if supported by the remote server)
+  - Custom HTTP Headers
 - Asynchronous w/ [Tokio]
 - Progress bar w/ [indicatif]
   - Display the individual progress

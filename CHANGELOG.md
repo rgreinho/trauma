@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.1] - 2023-03-06
+
+### Fixed
+
+- Handled the case when the server does not send a `content-length` header,
+  causing downloads to be skipped. [#56]
+
+[#56]: https://github.com/rgreinho/trauma/pull/56
+
 ## [2.2.0] - 2022-01-21
 
 ### Added
