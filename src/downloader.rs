@@ -216,8 +216,15 @@ impl Downloader {
         };
 
         debug!("Creating destination file {:?}", &output);
+        // append: If we can't resume from where we left off,
+        //         we should overrwite the file and start again
+        //         This also prevents corrupting files by writing
+        //         to them again
+        // write:  We are writing to the file
+        // create: The file should be created if it doesn't exist
         let mut file = match OpenOptions::new()
-            .append(true)
+            .append(can_resume)
+            .write(true) 
             .create(true)
             .open(output)
             .await
