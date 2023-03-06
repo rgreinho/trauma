@@ -184,16 +184,12 @@ impl Downloader {
         };
 
         // Update the summary with the collected details.
-        let size = res.content_length().unwrap_or(u64::MAX);
-        // ^^^ The default u64 value is 0, which will instantly skip a download
-        //     For this reason we set it to an unreasonably high value instead
-        //     of using `unwrap_or_default`. This ensures downloads won't be
-        //     skipped for no reason.
+        let size = res.content_length().unwrap_or_default();
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
         // If there is nothing else to download for this file, we can return.
-        if size == size_on_disk {
+        if size_on_disk > 0 && size == size_on_disk {
             return summary.with_status(Status::Skipped(
                 "the file was already fully downloaded".into(),
             ));
