@@ -228,6 +228,8 @@ impl Downloader {
             }
         };
 
+        let mut final_size = size_on_disk;
+
         // Download the file chunk by chunk.
         debug!("Retrieving chunks...");
         let mut stream = res.bytes_stream();
@@ -239,7 +241,9 @@ impl Downloader {
                     return summary.fail(e);
                 }
             };
-            pb.inc(chunk.len() as u64);
+            let chunk_size = chunk.len() as u64;
+            final_size += chunk_size;
+            pb.inc(chunk_size);
 
             // Write the chunk to disk.
             match file.write_all_buf(&mut chunk).await {
@@ -261,7 +265,8 @@ impl Downloader {
         main.inc(1);
 
         // Create a new summary with the real download size
-        let summary = Summary::new(download.clone(), status, size_on_disk, can_resume);
+        println!("Size on disk {}", size_on_disk);
+        let summary = Summary::new(download.clone(), status, final_size, can_resume);
         // Return the download summary.
         summary.with_status(Status::Success)
     }
