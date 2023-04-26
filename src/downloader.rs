@@ -184,7 +184,7 @@ impl Downloader {
         };
 
         // Update the summary with the collected details.
-        let size = res.content_length().unwrap_or_default();
+        let size = res.content_length().unwrap_or_default() + size_on_disk;
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
