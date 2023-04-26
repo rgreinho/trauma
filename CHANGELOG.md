@@ -8,6 +8,14 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.2] - 2023-04-26
+
+### Fixed
+
+- Fixed the total size which was incorrectly reported in the progress bar. [#59]
+
+[#59]: https://github.com/rgreinho/trauma/pull/59
+
 ## [2.2.1] - 2023-03-06
 
 ### Fixed
