@@ -8,6 +8,16 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.3] - 2023-05-14
+
+### Fixed
+
+- Ensured that custom headers are used for all the downloader requests, for
+  instance, propagating authentication headers to check whether a download can
+  be resumed. [#62]
+
+[#62]: https://github.com/rgreinho/trauma/pull/62
+
 ## [2.2.2] - 2023-04-26
 
 ### Fixed
