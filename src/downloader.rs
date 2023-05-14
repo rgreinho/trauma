@@ -39,6 +39,7 @@ pub struct Downloader {
     style_options: StyleOptions,
     /// Resume the download if necessary and possible.
     resumable: bool,
+    /// Custom HTTP headers.
     headers: Option<HeaderMap>,
 }
 
@@ -69,9 +70,15 @@ impl Downloader {
         // Prepare the HTTP client.
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(self.retries);
 
-        let inner_client = proxy.map_or_else(reqwest::Client::new, |p| {
-            reqwest::Client::builder().proxy(p).build().unwrap()
-        });
+        let mut inner_client_builder = reqwest::Client::builder();
+        if let Some(proxy) = proxy {
+            inner_client_builder = inner_client_builder.proxy(proxy);
+        }
+        if let Some(headers) = &self.headers {
+            inner_client_builder = inner_client_builder.default_headers(headers.clone());
+        }
+
+        let inner_client = inner_client_builder.build().unwrap();
 
         let client = ClientBuilder::new(inner_client)
             // Trace HTTP requests. See the tracing crate to make use of these traces.
