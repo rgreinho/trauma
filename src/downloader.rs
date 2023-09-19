@@ -214,8 +214,9 @@ impl Downloader {
         );
 
         // Prepare the destination directory/file.
-        debug!("Creating destination directory {:?}", &self.directory);
-        match fs::create_dir_all(&self.directory) {
+        let output_dir = output.parent().unwrap_or(&output);
+        debug!("Creating destination directory {:?}", output_dir);
+        match fs::create_dir_all(output_dir) {
             Ok(_res) => (),
             Err(e) => {
                 return summary.fail(e);
