@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.4]
+
+### Fixed
+
+- Fixed a silent failure when a download filename contains a path. [#73]
+
+[#73]: https://github.com/rgreinho/trauma/pull/73
+[2.2.4]: https://github.com/rgreinho/trauma/releases/tag/2.2.4
+
 ## [2.2.3] - 2023-05-14
 
 ### Fixed
@@ -17,6 +26,7 @@ and this project adheres to
   be resumed. [#62]
 
 [#62]: https://github.com/rgreinho/trauma/pull/62
+[2.2.3]: https://github.com/rgreinho/trauma/releases/tag/2.2.3
 
 ## [2.2.2] - 2023-04-26
 
@@ -25,6 +35,7 @@ and this project adheres to
 - Fixed the total size which was incorrectly reported in the progress bar. [#59]
 
 [#59]: https://github.com/rgreinho/trauma/pull/59
+[2.2.2]: https://github.com/rgreinho/trauma/releases/tag/2.2.2
 
 ## [2.2.1] - 2023-03-06
 
@@ -34,6 +45,7 @@ and this project adheres to
   causing downloads to be skipped. [#56]
 
 [#56]: https://github.com/rgreinho/trauma/pull/56
+[2.2.1]: https://github.com/rgreinho/trauma/releases/tag/2.2.1
 
 ## [2.2.0] - 2022-01-21
 
