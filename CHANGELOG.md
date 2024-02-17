@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Handled 416 status when a file is already fully downloaded. [#86]
+
+[#86]: https://github.com/rgreinho/trauma/pull/86
+
 ## [2.2.4]
 
 ### Fixed

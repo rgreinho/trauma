@@ -1,7 +1,10 @@
 //! Represents a file to be downloaded.
 
 use crate::Error;
-use reqwest::{header::ACCEPT_RANGES, StatusCode, Url};
+use reqwest::{
+    header::{ACCEPT_RANGES, CONTENT_LENGTH},
+    StatusCode, Url,
+};
 use reqwest_middleware::ClientWithMiddleware;
 use std::convert::TryFrom;
 
@@ -54,6 +57,28 @@ impl Download {
             None => Ok(false),
             Some(x) if x == "none" => Ok(false),
             Some(_) => Ok(true),
+        }
+    }
+
+    /// Retrieve the content_length of the download.
+    ///
+    /// Returns None if the "content-length" header is missing or if its value
+    /// is not a u64.
+    pub async fn content_length(
+        &self,
+        client: &ClientWithMiddleware,
+    ) -> Result<Option<u64>, reqwest_middleware::Error> {
+        let res = client.head(self.url.clone()).send().await?;
+        let headers = res.headers();
+        match headers.get(CONTENT_LENGTH) {
+            None => Ok(None),
+            Some(header_value) => match header_value.to_str() {
+                Ok(v) => match v.to_string().parse::<u64>() {
+                    Ok(v) => Ok(Some(v)),
+                    Err(_) => Ok(None),
+                },
+                Err(_) => Ok(None),
+            },
         }
     }
 }
