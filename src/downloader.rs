@@ -138,6 +138,7 @@ impl Downloader {
             size_on_disk,
             can_resume,
         );
+        let mut content_length: Option<u64> = None;
 
         // If resumable is turned on...
         if self.resumable {
@@ -157,13 +158,22 @@ impl Downloader {
                     Err(e) => {
                         return summary.fail(e);
                     }
-                }
+                };
+
+                // Retrieve the download size from the header if possible.
+                content_length = match download.content_length(client).await {
+                    Ok(l) => l,
+                    Err(e) => {
+                        return summary.fail(e);
+                    }
+                };
             }
 
             // Update the summary accordingly.
             summary.set_resumable(can_resume);
         }
 
+        // If resumable is turned on...
         // Request the file.
         debug!("Fetching {}", &download.url);
         let mut req = client.get(download.url.clone());
@@ -171,10 +181,12 @@ impl Downloader {
             req = req.header(RANGE, format!("bytes={}-", size_on_disk));
         }
 
+        // Add extra headers if needed.
         if let Some(ref h) = self.headers {
             req = req.headers(h.to_owned());
         }
 
+        // Ensure there was no error while sending the request.
         let res = match req.send().await {
             Ok(res) => res,
             Err(e) => {
@@ -182,16 +194,23 @@ impl Downloader {
             }
         };
 
+        // Check wether or not we need to download the file.
+        if let Some(content_length) = content_length {
+            if content_length == size_on_disk {
+                return summary.with_status(Status::Skipped(
+                    "the file was already fully downloaded".into(),
+                ));
+            }
+        }
+
         // Check the status for errors.
         match res.error_for_status_ref() {
             Ok(_res) => (),
-            Err(e) => {
-                return summary.fail(e);
-            }
+            Err(e) => return summary.fail(e),
         };
 
         // Update the summary with the collected details.
-        let size = res.content_length().unwrap_or_default() + size_on_disk;
+        let size = content_length.unwrap_or_default() + size_on_disk;
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
