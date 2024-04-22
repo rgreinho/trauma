@@ -13,7 +13,7 @@ keywords = ["http", "download", "async", "tokio", "indicatif"]
 [dependencies]
 futures = "0.3.25"
 indicatif = "0.17.3"
-reqwest = { version = "0.11.24", features = ["stream", "socks"] }
+reqwest = { version = "0.12.4", features = ["stream", "socks"] }
 reqwest-middleware = "0.2.4"
 reqwest-retry = "0.4.0"
 reqwest-tracing = { version = "0.4.7", features = ["opentelemetry_0_17"] }
