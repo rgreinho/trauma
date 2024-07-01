@@ -16,7 +16,7 @@ futures = "0.3.25"
 indicatif = "0.17.3"
 reqwest = { version = "0.12.4", features = ["stream", "socks"] }
 reqwest-middleware = "0.3.1"
-reqwest-retry = "0.5.0"
+reqwest-retry = "0.6.0"
 reqwest-tracing = { version = "0.5", features = ["opentelemetry_0_22"] }
 task-local-extensions = "0.1.3"
 thiserror = "1.0.38"
