@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.2.6] - 2024-11-14
+
+### Fixed
+
+- Updated the `reqwest-*` libraries. [#113]
+
+[#113]: https://github.com/rgreinho/trauma/pull/113
+[2.2.6]: https://github.com/rgreinho/trauma/releases/tag/2.2.6
+
 ## [2.2.5]
 
 ### Fixed
