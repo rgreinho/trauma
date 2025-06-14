@@ -45,6 +45,7 @@ Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
 trauma = "2"
+# or `trauma = { version = "2", default-features = false, features = ["rustls"] }` if you prefer rustls
 ```
 
 ## Quick start

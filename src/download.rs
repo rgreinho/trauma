@@ -95,7 +95,7 @@ impl TryFrom<&Url> for Download {
                     value
                 ))
             })?
-            .last()
+            .next_back()
             .map(String::from)
             .map(|filename| Download {
                 url: value.clone(),

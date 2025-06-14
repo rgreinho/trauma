@@ -38,7 +38,7 @@ async fn main() -> Result<(), Report> {
 
     // Make sure the server accepts range requests.
     let res = reqwest::Client::new()
-        .head(&avatar.to_string())
+        .head(avatar.to_string())
         .send()
         .await?;
     let headers = res.headers();
@@ -53,10 +53,10 @@ async fn main() -> Result<(), Report> {
     assert!(resumable);
 
     // Request a random amount of data to simulate a previously failed download.
-    let mut rng = rand::thread_rng();
-    let random_bytes: u8 = rng.gen();
+    let mut rng = rand::rng();
+    let random_bytes: u8 = rng.random();
     let res = reqwest::Client::new()
-        .get(&avatar.to_string())
+        .get(avatar.to_string())
         .header(RANGE, format!("bytes=0-{}", random_bytes))
         .send()
         .await?;
