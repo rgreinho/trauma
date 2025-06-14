@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.3.0] - 2025-06-14
+
+### Changed
+
+- Added feature to support Rustls. [#124]
+
+[#124]: https://github.com/rgreinho/trauma/pull/124
+[2.3.0]: https://github.com/rgreinho/trauma/releases/tag/2.3.0
+
 ## [2.2.6] - 2024-11-14
 
 ### Fixed
