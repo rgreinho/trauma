@@ -14,7 +14,13 @@ keywords = ["http", "download", "async", "tokio", "indicatif"]
 form_urlencoded = "1.1.0"
 futures = "0.3.25"
 indicatif = "0.17.3"
-reqwest = { version = "0.12.4", features = ["stream", "socks"] }
+reqwest = { version = "0.12.4", default-features = false, features = [
+  "charset",
+  "http2",
+  "system-proxy",
+  "stream",
+  "socks",
+] }
 reqwest-middleware = "0.4.0"
 reqwest-retry = "0.7.0"
 reqwest-tracing = { version = "0.5", features = ["opentelemetry_0_22"] }
@@ -32,3 +38,7 @@ console = "0.15"
 opentelemetry = "0.29.0"
 rand = "0.9.0"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[features]
+default = ["reqwest/default-tls"]
+rustls = ["reqwest/rustls-tls"]
