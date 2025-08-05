@@ -90,10 +90,7 @@ impl TryFrom<&Url> for Download {
         value
             .path_segments()
             .ok_or_else(|| {
-                Error::InvalidUrl(format!(
-                    "the url \"{}\" does not contain a valid path",
-                    value
-                ))
+                Error::InvalidUrl(format!("the url \"{value}\" does not contain a valid path"))
             })?
             .next_back()
             .map(String::from)
@@ -104,7 +101,7 @@ impl TryFrom<&Url> for Download {
                     .collect(),
             })
             .ok_or_else(|| {
-                Error::InvalidUrl(format!("the url \"{}\" does not contain a filename", value))
+                Error::InvalidUrl(format!("the url \"{value}\" does not contain a filename"))
             })
     }
 }
@@ -114,9 +111,7 @@ impl TryFrom<&str> for Download {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         Url::parse(value)
-            .map_err(|e| {
-                Error::InvalidUrl(format!("the url \"{}\" cannot be parsed: {}", value, e))
-            })
+            .map_err(|e| Error::InvalidUrl(format!("the url \"{value}\" cannot be parsed: {e}")))
             .and_then(|u| Download::try_from(&u))
     }
 }
@@ -182,7 +177,7 @@ impl Summary {
 
     pub fn fail(self, msg: impl std::fmt::Display) -> Self {
         Self {
-            status: Status::Fail(format!("{}", msg)),
+            status: Status::Fail(format!("{msg}")),
             ..self
         }
     }
