@@ -57,7 +57,7 @@ async fn main() -> Result<(), Report> {
     let random_bytes: u8 = rng.random();
     let res = reqwest::Client::new()
         .get(avatar.to_string())
-        .header(RANGE, format!("bytes=0-{}", random_bytes))
+        .header(RANGE, format!("bytes=0-{random_bytes}"))
         .send()
         .await?;
 
