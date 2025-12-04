@@ -159,15 +159,15 @@ impl Downloader {
                         return summary.fail(e);
                     }
                 };
-
-                // Retrieve the download size from the header if possible.
-                content_length = match download.content_length(client).await {
-                    Ok(l) => l,
-                    Err(e) => {
-                        return summary.fail(e);
-                    }
-                };
             }
+
+            // Retrieve the download size from the header if possible.
+            content_length = match download.content_length(client).await {
+                Ok(l) => l,
+                Err(e) => {
+                    return summary.fail(e);
+                }
+            };
 
             // Update the summary accordingly.
             summary.set_resumable(can_resume);
