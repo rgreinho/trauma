@@ -1,7 +1,7 @@
 # Meta task running all the linters at once.
 lint: lint-md lint-spellcheck
 
-# Lint markown files.
+# Lint markdown files.
 lint-md:
     npx --yes markdownlint-cli2 "**/*.md" "#target"
 
