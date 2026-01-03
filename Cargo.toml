@@ -24,11 +24,9 @@ reqwest = { version = "0.12.4", default-features = false, features = [
 reqwest-middleware = "0.4.2"
 reqwest-retry = "0.8.0"
 reqwest-tracing = { version = "0.5.7", features = ["opentelemetry_0_22"] }
-task-local-extensions = "0.1.3"
 thiserror = "2.0.12"
 tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.41"
-tracing-opentelemetry = "0.32.0"
 tracing-subscriber = "0.3.19"
 
 [dev-dependencies]
