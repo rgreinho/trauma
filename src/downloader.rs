@@ -194,7 +194,7 @@ impl Downloader {
             }
         };
 
-        // Check wether or not we need to download the file.
+        // Check whether or not we need to download the file.
         if let Some(content_length) = content_length {
             if content_length == size_on_disk {
                 return summary.with_status(Status::Skipped(
