@@ -194,7 +194,7 @@ may still be good.
 >   tampering.
 
 We think we are in compliance here, but the secrets are usable to each step of
-the workflow, even though the contant cannot be viewed direclty.
+the workflow, even though the content cannot be viewed directly.
 
 GitHub actions lets admin share secrets either at the organization level, either
 at the repository level. This part will require more digging to see if the way
@@ -234,7 +234,7 @@ secret, therefore accessible anywhere throughout the workflow.
 
 ## SLSA 4
 
-Since we believe we are SLSA 3 compliant, let's continue this excercise and see
+Since we believe we are SLSA 3 compliant, let's continue this exercise and see
 if we can reach level 4.
 
 ### ❌ [Source - Two-person reviewed]
