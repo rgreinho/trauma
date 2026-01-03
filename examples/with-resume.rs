@@ -79,7 +79,7 @@ async fn main() -> Result<(), Report> {
     );
     let downloads = vec![dl];
 
-    // Hidding the progress bar because of the logging.
+    // Hiding the progress bar because of the logging.
     let downloader = DownloaderBuilder::hidden()
         .directory(output.parent().unwrap().to_path_buf())
         .build();

@@ -20,7 +20,7 @@ async fn main() -> Result<(), Error> {
         "https://cdimage.debian.org/debian-cd/current/arm64/iso-cd/debian-11.7.0-arm64-netinst.iso";
     let downloads = vec![Download::try_from(debian_net_install).unwrap()];
     let style_opts = StyleOptions::new(
-        // The main bar uses a predifined template and progression characters set.
+        // The main bar uses a predefined template and progression characters set.
         ProgressBarOpts::new(
             Some(ProgressBarOpts::TEMPLATE_BAR_WITH_POSITION.into()),
             Some(ProgressBarOpts::CHARS_FINE.into()),
