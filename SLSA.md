@@ -234,7 +234,7 @@ secret, therefore accessible anywhere throughout the workflow.
 
 ## SLSA 4
 
-Since we believe we are SLSA 3 compliant, let's continue this excercise and see
+Since we believe we are SLSA 3 compliant, let's continue this exercise and see
 if we can reach level 4.
 
 ### ❌ [Source - Two-person reviewed]
