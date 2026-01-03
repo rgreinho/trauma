@@ -194,7 +194,7 @@ may still be good.
 >   tampering.
 
 We think we are in compliance here, but the secrets are usable to each step of
-the workflow, even though the contant cannot be viewed direclty.
+the workflow, even though the contant cannot be viewed directly.
 
 GitHub actions lets admin share secrets either at the organization level, either
 at the repository level. This part will require more digging to see if the way
