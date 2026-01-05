@@ -14,7 +14,7 @@ keywords = ["http", "download", "async", "tokio", "indicatif"]
 form_urlencoded = "1.1.0"
 futures = "0.3.25"
 indicatif = "0.18.0"
-reqwest = { version = "0.12.4", default-features = false, features = [
+reqwest = { version = "0.13.1", default-features = false, features = [
   "charset",
   "http2",
   "system-proxy",
