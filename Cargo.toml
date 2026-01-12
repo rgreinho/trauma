@@ -23,7 +23,7 @@ reqwest = { version = "0.12.4", default-features = false, features = [
 ] }
 reqwest-middleware = "0.4.2"
 reqwest-retry = "0.8.0"
-reqwest-tracing = { version = "0.5.7", features = ["opentelemetry_0_22"] }
+reqwest-tracing = { version = "0.6.0", features = ["opentelemetry_0_22"] }
 thiserror = "2.0.12"
 tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.41"
