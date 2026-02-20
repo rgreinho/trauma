@@ -34,7 +34,7 @@ color-eyre = "0.6.5"
 comfy-table = "7.1.4"
 console = "0.16.0"
 opentelemetry = "0.31.0"
-rand = "0.9.1"
+rand = "0.10.0"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
