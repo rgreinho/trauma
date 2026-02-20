@@ -138,7 +138,7 @@ impl Downloader {
             size_on_disk,
             can_resume,
         );
-        let mut content_length: Option<u64> = None;
+        let file_exist = output.exists();
 
         // If resumable is turned on...
         if self.resumable {
@@ -150,19 +150,11 @@ impl Downloader {
             };
 
             // Check if there is a file on disk already.
-            if can_resume && output.exists() {
+            if file_exist {
                 debug!("A file with the same name already exists at the destination.");
                 // If so, check file length to know where to restart the download from.
                 size_on_disk = match output.metadata() {
                     Ok(m) => m.len(),
-                    Err(e) => {
-                        return summary.fail(e);
-                    }
-                };
-
-                // Retrieve the download size from the header if possible.
-                content_length = match download.content_length(client).await {
-                    Ok(l) => l,
                     Err(e) => {
                         return summary.fail(e);
                     }
@@ -172,6 +164,18 @@ impl Downloader {
             // Update the summary accordingly.
             summary.set_resumable(can_resume);
         }
+
+        // Retrieve the download size from the header if possible.
+        let content_length = match download.content_length(client).await {
+            Ok(l) => l,
+            Err(e) => {
+                if can_resume && file_exist {
+                    return summary.fail(e);
+                }
+                debug!("Error retrieving content length {e}");
+                None
+            }
+        };
 
         // If resumable is turned on...
         // Request the file.
