@@ -8,6 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-02-20
+
+### Fixed
+
+- Fixed bug preventing the file sizes to be displayed correctly. [#136]
+
+[#136]: https://github.com/rgreinho/trauma/pull/136
+[2.4.0]: https://github.com/rgreinho/trauma/releases/tag/2.4.0
+
 ## [2.3.0] - 2025-06-14
 
 ### Changed
