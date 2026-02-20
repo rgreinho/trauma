@@ -11,7 +11,7 @@ use color_eyre::{
     Result,
 };
 use futures::stream::StreamExt;
-use rand::Rng;
+use rand::RngExt;
 use reqwest::{
     header::{ACCEPT_RANGES, RANGE},
     Url,
