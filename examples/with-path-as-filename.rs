@@ -15,6 +15,7 @@ async fn main() -> Result<(), Error> {
     let downloads = vec![Download {
         url: Url::parse(reqwest_rs).unwrap(),
         filename: "output/test_dir/reqwest.zip".to_string(),
+        tag: None,
     }];
     let downloader = DownloaderBuilder::new().build();
     downloader.download(&downloads).await;
