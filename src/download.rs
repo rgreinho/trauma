@@ -15,6 +15,9 @@ pub struct Download {
     pub url: Url,
     /// File name used to save the file on disk.
     pub filename: String,
+    /// Optional tag used as the progress bar message text for each download.
+    /// Falls back to `filename` if not set.
+    pub tag: Option<String>,
 }
 
 impl Download {
@@ -39,11 +42,25 @@ impl Download {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(url: &Url, filename: &str) -> Self {
+    pub fn new(url: &Url, filename: impl Into<String>) -> Self {
         Self {
             url: url.clone(),
-            filename: String::from(filename),
+            filename: filename.into(),
+            tag: None,
         }
+    }
+
+    /// Set the download tag.
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// # use trauma::download::Download;
+    /// let d = Download::try_from("https://example.com/file-0.1.2.zip").unwrap().with_tag("my custom tag");
+    /// ```
+    pub fn with_tag(mut self, tag: impl Into<String>) -> Self {
+        self.tag = Some(tag.into());
+        self
     }
 
     /// Check whether the download is resumable.
@@ -99,6 +116,7 @@ impl TryFrom<&Url> for Download {
                 filename: form_urlencoded::parse(filename.as_bytes())
                     .map(|(key, val)| [key, val].concat())
                     .collect(),
+                tag: None,
             })
             .ok_or_else(|| {
                 Error::InvalidUrl(format!("the url \"{value}\" does not contain a filename"))

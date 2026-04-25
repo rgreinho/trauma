@@ -13,6 +13,7 @@ use reqwest_tracing::TracingMiddleware;
 use std::{fs, path::PathBuf, sync::Arc};
 use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 use tracing::debug;
+use unicode_width::UnicodeWidthStr;
 
 pub struct TimeTrace;
 
@@ -41,6 +42,8 @@ pub struct Downloader {
     resumable: bool,
     /// Custom HTTP headers.
     headers: Option<HeaderMap>,
+    /// Whether to display per-download tags on child progress bars.
+    display_tag: bool,
 }
 
 impl Downloader {
@@ -102,9 +105,18 @@ impl Downloader {
         );
         main.tick();
 
+        let tag_width = if self.display_tag {
+            downloads
+                .iter()
+                .map(|d| UnicodeWidthStr::width(d.tag.as_deref().unwrap_or(&d.filename)))
+                .max()
+        } else {
+            None
+        };
+
         // Download the files asynchronously.
         let summaries = stream::iter(downloads)
-            .map(|d| self.fetch(&client, d, multi.clone(), main.clone()))
+            .map(|d| self.fetch(&client, d, multi.clone(), main.clone(), tag_width))
             .buffer_unordered(self.concurrent_downloads)
             .collect::<Vec<_>>()
             .await;
@@ -127,6 +139,7 @@ impl Downloader {
         download: &Download,
         multi: Arc<MultiProgress>,
         main: Arc<ProgressBar>,
+        tag_width: Option<usize>,
     ) -> Summary {
         // Create a download summary.
         let mut size_on_disk: u64 = 0;
@@ -228,13 +241,25 @@ impl Downloader {
         // Create the progress bar.
         // If the download is being resumed, the progress bar position is
         // updated to start where the download stopped before.
-        let pb = multi.add(
-            self.style_options
-                .child
-                .clone()
-                .to_progress_bar(size)
-                .with_position(size_on_disk),
-        );
+        let mut child_opts = self.style_options.child.clone();
+
+        // tag_width is Some means we are displaying tags, so we prepend `{msg:<N} ` to the child template.
+        if let Some(width) = tag_width {
+            let tag_prefix = format!("{{msg:<{width}}} ");
+            child_opts.template = child_opts.template.map(|t| format!("{tag_prefix}{t}"));
+        }
+
+        let pb = multi.add(child_opts.to_progress_bar(size).with_position(size_on_disk));
+
+        if tag_width.is_some() {
+            pb.set_message(
+                download
+                    .tag
+                    .as_deref()
+                    .unwrap_or(&download.filename)
+                    .to_string(),
+            );
+        }
 
         // Prepare the destination directory/file.
         let output_dir = output.parent().unwrap_or(&output);
@@ -353,6 +378,15 @@ impl DownloaderBuilder {
         self
     }
 
+    /// Set whether to display per-download tags on child progress bars.
+    ///
+    /// When enabled, each child bar prepends a left-aligned tag (or filename
+    /// fallback) padded to the width of the longest one so all bars align.
+    pub fn display_tag(mut self, show: bool) -> Self {
+        self.0.display_tag = show;
+        self
+    }
+
     fn new_header(&self) -> HeaderMap {
         match self.0.headers {
             Some(ref h) => h.to_owned(),
@@ -435,6 +469,7 @@ impl DownloaderBuilder {
             style_options: self.0.style_options,
             resumable: self.0.resumable,
             headers: self.0.headers,
+            display_tag: self.0.display_tag,
         }
     }
 }
@@ -448,6 +483,7 @@ impl Default for DownloaderBuilder {
             style_options: StyleOptions::default(),
             resumable: true,
             headers: None,
+            display_tag: true,
         })
     }
 }
