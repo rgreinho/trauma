@@ -142,15 +142,10 @@ impl Downloader {
         tag_width: Option<usize>,
     ) -> Summary {
         // Create a download summary.
-        let mut size_on_disk: u64 = 0;
+        let mut size_on_disk: Option<u64> = None;
         let mut can_resume = false;
         let output = self.directory.join(&download.filename);
-        let mut summary = Summary::new(
-            download.clone(),
-            StatusCode::BAD_REQUEST,
-            size_on_disk,
-            can_resume,
-        );
+        let mut summary = Summary::new(download.clone(), StatusCode::BAD_REQUEST, 0, can_resume);
         let file_exist = output.exists();
 
         // If resumable is turned on...
@@ -167,7 +162,7 @@ impl Downloader {
                 debug!("A file with the same name already exists at the destination.");
                 // If so, check file length to know where to restart the download from.
                 size_on_disk = match output.metadata() {
-                    Ok(m) => m.len(),
+                    Ok(m) => Some(m.len()),
                     Err(e) => {
                         return summary.fail(e);
                     }
@@ -194,8 +189,10 @@ impl Downloader {
         // Request the file.
         debug!("Fetching {}", &download.url);
         let mut req = client.get(download.url.clone());
-        if self.resumable && can_resume {
-            req = req.header(RANGE, format!("bytes={size_on_disk}-"));
+        if let Some(size_on_disk) = size_on_disk {
+            if self.resumable && can_resume {
+                req = req.header(RANGE, format!("bytes={size_on_disk}-"));
+            }
         }
 
         // Add extra headers if needed.
@@ -212,12 +209,10 @@ impl Downloader {
         };
 
         // Check whether or not we need to download the file.
-        if let Some(content_length) = content_length {
-            if content_length == size_on_disk {
-                return summary.with_status(Status::Skipped(
-                    "the file was already fully downloaded".into(),
-                ));
-            }
+        if content_length == size_on_disk {
+            return summary.with_status(Status::Skipped(
+                "the file was already fully downloaded".into(),
+            ));
         }
 
         // Check the status for errors.
@@ -227,12 +222,12 @@ impl Downloader {
         };
 
         // Update the summary with the collected details.
-        let size = content_length.unwrap_or_default() + size_on_disk;
+        let size = content_length.unwrap_or_default() + size_on_disk.unwrap_or_default();
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
         // If there is nothing else to download for this file, we can return.
-        if size_on_disk > 0 && size == size_on_disk {
+        if size_on_disk > Some(0) && Some(size) == size_on_disk {
             return summary.with_status(Status::Skipped(
                 "the file was already fully downloaded".into(),
             ));
@@ -249,7 +244,11 @@ impl Downloader {
             child_opts.template = child_opts.template.map(|t| format!("{tag_prefix}{t}"));
         }
 
-        let pb = multi.add(child_opts.to_progress_bar(size).with_position(size_on_disk));
+        let pb = multi.add(
+            child_opts
+                .to_progress_bar(size)
+                .with_position(size_on_disk.unwrap_or_default()),
+        );
 
         if tag_width.is_some() {
             pb.set_message(
@@ -285,7 +284,7 @@ impl Downloader {
             }
         };
 
-        let mut final_size = size_on_disk;
+        let mut final_size = size_on_disk.unwrap_or_default();
 
         // Download the file chunk by chunk.
         debug!("Retrieving chunks...");
