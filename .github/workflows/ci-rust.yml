@@ -24,9 +24,12 @@ jobs:
       - name: Test examples
         run: |
           EXAMPLES="simple
+          with-not-resumable
+          with-path-as-filename
           with-report
-          with-style
           with-resume
+          with-style
+          with-tag
           "
           for example in $EXAMPLES; do
             echo "==== Testing $example ======================================="
