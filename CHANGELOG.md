@@ -8,6 +8,22 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-06-11
+
+### Fixed
+
+- Re-download incomplete non-resumable files. [#162]
+
+### Changed
+
+- Added the missing `resumable()` function to the `DownloadBuilder`. [#165]
+- Replaced sync functions with async equivalent. [#166]
+
+[#162]: https://github.com/rgreinho/trauma/pull/162
+[#165]: https://github.com/rgreinho/trauma/pull/165
+[#166]: https://github.com/rgreinho/trauma/pull/166
+[2.5.0]: https://github.com/rgreinho/trauma/releases/tag/2.5.0
+
 ## [2.4.0] - 2026-02-20
 
 ### Fixed

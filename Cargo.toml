@@ -1,6 +1,6 @@
 [package]
 name = "trauma"
-version = "2.4.0"
+version = "2.5.0"
 edition = "2021"
 license = "MIT"
 description = "Simplify and prettify HTTP downloads"
