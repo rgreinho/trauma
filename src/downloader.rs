@@ -376,6 +376,12 @@ impl DownloaderBuilder {
         self
     }
 
+    /// Enable or disable resume support.
+    pub fn resumable(mut self, resumable: bool) -> Self {
+        self.0.resumable = resumable;
+        self
+    }
+
     /// Set the downloader style options.
     pub fn style_options(mut self, style_options: StyleOptions) -> Self {
         self.0.style_options = style_options;
@@ -666,5 +672,12 @@ mod test {
             d.concurrent_downloads,
             Downloader::DEFAULT_CONCURRENT_DOWNLOADS
         );
+        assert!(d.resumable);
+    }
+
+    #[test]
+    fn test_builder_resumable_toggle() {
+        let d = DownloaderBuilder::new().resumable(false).build();
+        assert!(!d.resumable);
     }
 }
