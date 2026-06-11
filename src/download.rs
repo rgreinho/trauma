@@ -70,11 +70,33 @@ impl Download {
     ) -> Result<bool, reqwest_middleware::Error> {
         let res = client.head(self.url.clone()).send().await?;
         let headers = res.headers();
-        match headers.get(ACCEPT_RANGES) {
-            None => Ok(false),
-            Some(x) if x == "none" => Ok(false),
-            Some(_) => Ok(true),
+        let accept_ranges = match headers.get(ACCEPT_RANGES) {
+            None => false,
+            Some(x) if x == "none" => false,
+            Some(_) => true,
+        };
+
+        // If the server doesn't support range requests, we consider the
+        // download as not resumable.
+        if !accept_ranges {
+            return Ok(false);
         }
+
+        // If we don't get a content length or if we get a content length of 0,
+        // we also consider the download as not resumable.
+        let content_length = Self::parse_content_length(headers);
+        Ok(content_length.is_some() && content_length != Some(0))
+    }
+
+    /// Parse the content length from the headers.
+    ///
+    /// Returns None if the "content-length" header is missing or if its value
+    /// is not a u64.
+    pub fn parse_content_length(headers: &reqwest::header::HeaderMap) -> Option<u64> {
+        headers
+            .get(CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.to_string().parse::<u64>().ok())
     }
 
     /// Retrieve the content_length of the download.
@@ -87,16 +109,7 @@ impl Download {
     ) -> Result<Option<u64>, reqwest_middleware::Error> {
         let res = client.head(self.url.clone()).send().await?;
         let headers = res.headers();
-        match headers.get(CONTENT_LENGTH) {
-            None => Ok(None),
-            Some(header_value) => match header_value.to_str() {
-                Ok(v) => match v.to_string().parse::<u64>() {
-                    Ok(v) => Ok(Some(v)),
-                    Err(_) => Ok(None),
-                },
-                Err(_) => Ok(None),
-            },
-        }
+        Ok(Self::parse_content_length(headers))
     }
 }
 

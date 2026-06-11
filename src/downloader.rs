@@ -49,6 +49,7 @@ pub struct Downloader {
 impl Downloader {
     const DEFAULT_RETRIES: u32 = 3;
     const DEFAULT_CONCURRENT_DOWNLOADS: usize = 32;
+    const ALREADY_DOWNLOADED: &str = "the file was already fully downloaded";
 
     /// Starts the downloads.
     pub async fn download(&self, downloads: &[Download]) -> Vec<Summary> {
@@ -144,6 +145,7 @@ impl Downloader {
         // Create a download summary.
         let mut size_on_disk: u64 = 0;
         let mut can_resume = false;
+        let mut can_append = false;
         let output = self.directory.join(&download.filename);
         let mut summary = Summary::new(
             download.clone(),
@@ -151,7 +153,19 @@ impl Downloader {
             size_on_disk,
             can_resume,
         );
+
+        // Check if there is a file on disk already.
         let file_exist = output.exists();
+        if file_exist {
+            debug!("A file with the same name already exists at the destination.");
+            // If so, check file length to know where to restart the download from.
+            size_on_disk = match output.metadata() {
+                Ok(m) => m.len(),
+                Err(e) => {
+                    return summary.fail(e);
+                }
+            };
+        }
 
         // If resumable is turned on...
         if self.resumable {
@@ -162,24 +176,15 @@ impl Downloader {
                 }
             };
 
-            // Check if there is a file on disk already.
-            if file_exist {
-                debug!("A file with the same name already exists at the destination.");
-                // If so, check file length to know where to restart the download from.
-                size_on_disk = match output.metadata() {
-                    Ok(m) => m.len(),
-                    Err(e) => {
-                        return summary.fail(e);
-                    }
-                };
-            }
+            // only appends when resumable is set, and we can resume.
+            can_append = can_resume;
 
             // Update the summary accordingly.
             summary.set_resumable(can_resume);
         }
 
         // Retrieve the download size from the header if possible.
-        let content_length = match download.content_length(client).await {
+        let mut content_length = match download.content_length(client).await {
             Ok(l) => l,
             Err(e) => {
                 if can_resume && file_exist {
@@ -190,8 +195,13 @@ impl Downloader {
             }
         };
 
-        // If resumable is turned on...
-        // Request the file.
+        // Check whether or not we need to download the file.
+        let content_length_value = content_length.unwrap_or_default();
+        if size_on_disk > 0 && size_on_disk == content_length_value {
+            return summary.with_status(Status::Skipped(Self::ALREADY_DOWNLOADED.into()));
+        }
+
+        // If resumable is turned on, request the next bytes.
         debug!("Fetching {}", &download.url);
         let mut req = client.get(download.url.clone());
         if self.resumable && can_resume {
@@ -211,31 +221,24 @@ impl Downloader {
             }
         };
 
-        // Check whether or not we need to download the file.
-        if let Some(content_length) = content_length {
-            if content_length == size_on_disk {
-                return summary.with_status(Status::Skipped(
-                    "the file was already fully downloaded".into(),
-                ));
-            }
-        }
-
         // Check the status for errors.
         match res.error_for_status_ref() {
             Ok(_res) => (),
             Err(e) => return summary.fail(e),
         };
 
+        // Update the content length with the value from the response header
+        // from the GET request, if possible.
+        content_length = Download::parse_content_length(res.headers());
+
         // Update the summary with the collected details.
-        let size = content_length.unwrap_or_default() + size_on_disk;
+        let size = content_length.unwrap_or_default();
         let status = res.status();
         summary = Summary::new(download.clone(), status, size, can_resume);
 
         // If there is nothing else to download for this file, we can return.
-        if size_on_disk > 0 && size == size_on_disk {
-            return summary.with_status(Status::Skipped(
-                "the file was already fully downloaded".into(),
-            ));
+        if size_on_disk > 0 && size_on_disk == size {
+            return summary.with_status(Status::Skipped(Self::ALREADY_DOWNLOADED.into()));
         }
 
         // Create the progress bar.
@@ -275,7 +278,8 @@ impl Downloader {
         let mut file = match OpenOptions::new()
             .create(true)
             .write(true)
-            .append(can_resume)
+            .append(can_append)
+            .truncate(!can_append)
             .open(output)
             .await
         {
