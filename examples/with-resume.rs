@@ -16,7 +16,7 @@ use reqwest::{
     header::{ACCEPT_RANGES, RANGE},
     Url,
 };
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 use tokio::{fs::File, io::AsyncWriteExt};
 use tracing::debug;
 use trauma::{download::Download, downloader::DownloaderBuilder};
@@ -34,7 +34,7 @@ async fn main() -> Result<(), Report> {
     // Prepare the download.
     let avatar = Url::parse("https://avatars.githubusercontent.com/u/6969134?v=4").unwrap();
     let output = PathBuf::from("output/avatar.jpg");
-    fs::create_dir_all(output.parent().unwrap())?;
+    tokio::fs::create_dir_all(output.parent().unwrap()).await?;
 
     // Make sure the server accepts range requests.
     let res = reqwest::Client::new()
