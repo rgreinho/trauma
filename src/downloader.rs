@@ -10,7 +10,7 @@ use reqwest::{
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
-use std::{fs, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 use tracing::debug;
 use unicode_width::UnicodeWidthStr;
@@ -154,18 +154,19 @@ impl Downloader {
             can_resume,
         );
 
-        // Check if there is a file on disk already.
-        let file_exist = output.exists();
-        if file_exist {
-            debug!("A file with the same name already exists at the destination.");
-            // If so, check file length to know where to restart the download from.
-            size_on_disk = match output.metadata() {
-                Ok(m) => m.len(),
-                Err(e) => {
-                    return summary.fail(e);
-                }
-            };
-        }
+        // Check if there is a file on disk already (async).
+        let file_exist = match tokio::fs::metadata(&output).await {
+            Ok(m) => {
+                debug!("A file with the same name already exists at the destination.");
+                // If so, check file length to know where to restart the download from.
+                size_on_disk = m.len();
+                true
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
+            Err(e) => {
+                return summary.fail(e);
+            }
+        };
 
         // If resumable is turned on...
         if self.resumable {
@@ -267,12 +268,9 @@ impl Downloader {
         // Prepare the destination directory/file.
         let output_dir = output.parent().unwrap_or(&output);
         debug!("Creating destination directory {:?}", output_dir);
-        match fs::create_dir_all(output_dir) {
-            Ok(_res) => (),
-            Err(e) => {
-                return summary.fail(e);
-            }
-        };
+        if let Err(e) = tokio::fs::create_dir_all(output_dir).await {
+            return summary.fail(e);
+        }
 
         debug!("Creating destination file {:?}", &output);
         let mut file = match OpenOptions::new()
