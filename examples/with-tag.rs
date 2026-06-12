@@ -7,10 +7,9 @@
 //! cargo run -q --example with-tag
 //! ```
 
-use std::path::PathBuf;
 use trauma::{
     download::Download,
-    downloader::{DownloaderBuilder, StyleOptions},
+    downloader::{Downloader, StyleOptions},
     Error,
 };
 
@@ -20,10 +19,11 @@ async fn main() -> Result<(), Error> {
         "https://github.com/lxl66566/GalgameManager/releases/download/v1.1.1/GalgameManager_1.1.1_x64_en-US.msi";
     let url_b = "https://github.com/lxl66566/GalgameManager/releases/download/v1.1.1/GalgameManager_1.1.1_amd64.AppImage";
 
-    let default_label = Download::try_from(url_a).unwrap();
-    let custom_label = Download::try_from(url_b)
-        .unwrap()
-        .with_tag("Galgame Manager");
+    let default_label = Download::builder().url(url_a)?.build();
+    let custom_label = Download::builder()
+        .url(url_b)?
+        .tag("Galgame Manager")
+        .build();
 
     // display_tag = true
     //
@@ -34,8 +34,8 @@ async fn main() -> Result<(), Error> {
     //
     // If no tag is set, the filename is used as a fallback.
     println!("=== Pass A: display_tag = true ===\n");
-    let downloader = DownloaderBuilder::new()
-        .directory(PathBuf::from("output"))
+    let downloader = Downloader::builder()
+        .directory("output")
         .style_options(StyleOptions::default())
         .build();
     downloader
@@ -46,8 +46,8 @@ async fn main() -> Result<(), Error> {
     //
     // No tag prefix is prepended
     println!("\n=== Pass B: display_tag = false ===\n");
-    let downloader = DownloaderBuilder::new()
-        .directory(PathBuf::from("output"))
+    let downloader = Downloader::builder()
+        .directory("output")
         .style_options(StyleOptions::default())
         .display_tag(false)
         .build();

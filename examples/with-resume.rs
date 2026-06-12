@@ -19,7 +19,10 @@ use reqwest::{
 use std::path::PathBuf;
 use tokio::{fs::File, io::AsyncWriteExt};
 use tracing::debug;
-use trauma::{download::Download, downloader::DownloaderBuilder};
+use trauma::{
+    download::Download,
+    downloader::{Downloader, StyleOptions},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Report> {
@@ -70,17 +73,20 @@ async fn main() -> Result<(), Report> {
     debug!("Retrieved {} bytes.", random_bytes);
 
     // Download the rest of the bits with the [`Downloader`].
-    let dl = Download::new(
-        &avatar,
-        output
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or(eyre!("invalid path terminator"))?,
-    );
+    let dl = Download::builder()
+        .url(avatar)?
+        .filename_override(
+            output
+                .file_name()
+                .and_then(|n| n.to_str())
+                .ok_or(eyre!("invalid path terminator"))?,
+        )
+        .build();
     let downloads = vec![dl];
 
     // Hiding the progress bar because of the logging.
-    let downloader = DownloaderBuilder::hidden()
+    let downloader = Downloader::builder()
+        .style_options(StyleOptions::hidden())
         .directory(output.parent().unwrap().to_path_buf())
         .build();
     downloader.download(&downloads).await;

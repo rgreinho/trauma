@@ -8,7 +8,6 @@
 
 use color_eyre::Result;
 use comfy_table::{Row, Table};
-use reqwest::Url;
 use std::path::PathBuf;
 use tokio::{
     fs::{self, File},
@@ -17,7 +16,7 @@ use tokio::{
 use tracing::debug;
 use trauma::{
     download::{Download, Status, Summary},
-    downloader::DownloaderBuilder,
+    downloader::Downloader,
     Error,
 };
 
@@ -31,9 +30,15 @@ async fn main() -> Result<(), Error> {
     // Prepare the download.
     // This URL is known to return a Content-Length: 0 to HEAD requests.
     let url = "https://stateparks.oregon.gov/index.cfm?do=main.loadFile&load=_siteFiles%2Fpublications%2F%2FSpringValleyGeoPDF093621.pdf";
-    let output = PathBuf::from("output/SpringValleyGeoPDF093621.pdf");
-    let _ = fs::remove_file(&output).await;
+    let output_dir = PathBuf::from("output");
+    let filename = "SpringValleyGeoPDF093621.pdf";
+    let output = output_dir.join(filename);
 
+    // Clean up.
+    let _ = fs::remove_file(&output).await;
+    fs::create_dir_all(&output_dir).await?;
+
+    // Create a corrupted file for testing that it does get re-downloaded.
     let mut file = File::create(&output).await?;
     file.write_all(b"hello").await?;
     file.flush().await?;
@@ -43,13 +48,11 @@ async fn main() -> Result<(), Error> {
     );
 
     // Setup the download item for Trauma.
-    let downloads = vec![Download::new(
-        &Url::parse(url).unwrap(),
-        "SpringValleyGeoPDF093621.pdf",
-    )];
-    let downloader = DownloaderBuilder::new()
-        .directory(PathBuf::from("output"))
-        .build();
+    let downloads = vec![Download::builder()
+        .url(url)?
+        .filename_override(filename)
+        .build()];
+    let downloader = Downloader::builder().directory(output_dir).build();
 
     // First attempt, redownload the file and display the summary.
     print!("Downloading file... ");
@@ -87,7 +90,10 @@ fn display_summary(summaries: &[Summary]) {
             }
         };
         table.add_row(vec![
-            &s.download().filename,
+            &s.download()
+                .filename_override()
+                .map_or("", |v| v)
+                .to_string(),
             &s.size().to_string(),
             &status,
             &error,

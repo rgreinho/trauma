@@ -7,13 +7,13 @@
 //! ```
 
 use std::path::PathBuf;
-use trauma::{download::Download, downloader::DownloaderBuilder, Error};
+use trauma::{download::Download, downloader::Downloader, Error};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let reqwest_rs = "https://github.com/seanmonstar/reqwest/archive/refs/tags/v0.11.9.zip";
-    let downloads = vec![Download::try_from(reqwest_rs).unwrap()];
-    let downloader = DownloaderBuilder::new()
+    let url = "https://github.com/seanmonstar/reqwest/archive/refs/tags/v0.11.9.zip";
+    let downloads = vec![Download::builder().url(url)?.build()];
+    let downloader = Downloader::builder()
         .directory(PathBuf::from("output"))
         .build();
     downloader.download(&downloads).await;

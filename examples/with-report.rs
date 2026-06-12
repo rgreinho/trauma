@@ -8,10 +8,9 @@
 
 use color_eyre::{eyre::Report, Result};
 use comfy_table::{Row, Table};
-use std::path::PathBuf;
 use trauma::{
     download::{Download, Status, Summary},
-    downloader::DownloaderBuilder,
+    downloader::Downloader,
 };
 
 #[tokio::main]
@@ -23,13 +22,11 @@ async fn main() -> Result<(), Report> {
     let reqwest_rs = "https://github.com/seanmonstar/reqwest/archive/refs/tags/v0.11.9.zip";
     let fake = format!("{}.fake", &reqwest_rs);
     let downloads = vec![
-        Download::try_from(reqwest_rs).unwrap(),
-        Download::try_from(reqwest_rs).unwrap(),
-        Download::try_from(fake.as_str()).unwrap(),
+        Download::builder().url(reqwest_rs)?.build(),
+        Download::builder().url(reqwest_rs)?.build(),
+        Download::builder().url(fake)?.build(),
     ];
-    let downloader = DownloaderBuilder::new()
-        .directory(PathBuf::from("output"))
-        .build();
+    let downloader = Downloader::builder().directory("output").build();
     let summaries = downloader.download(&downloads).await;
 
     // Display results.
@@ -61,7 +58,10 @@ fn display_summary(summaries: &[Summary]) {
             }
         };
         table.add_row(vec![
-            &s.download().filename,
+            &s.download()
+                .filename_override()
+                .map_or("", |v| v)
+                .to_string(),
             &s.size().to_string(),
             &status,
             &error,
