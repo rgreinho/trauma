@@ -26,18 +26,19 @@
 //! https://github.com/svenstaro/miniserve
 //!
 
-use reqwest::header::{self, HeaderValue};
+use reqwest::header::{self, HeaderMap, HeaderValue};
 use std::path::PathBuf;
-use trauma::{download::Download, downloader::DownloaderBuilder, Error};
+use trauma::{download::Download, downloader::Downloader, Error};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let reqwest_rs = "http://localhost:8080/debian-11.7.0-arm64-netinst.iso";
-    let downloads = vec![Download::try_from(reqwest_rs).unwrap()];
+    let url = "http://localhost:8080/debian-11.7.0-arm64-netinst.iso";
+    let downloads = vec![Download::builder().url(url)?.build()];
     let auth = HeaderValue::from_str("Basic dHJhdW1hOnRlc3Q=").expect("Invalid auth");
-    let downloader = DownloaderBuilder::new()
+    let headermap = HeaderMap::from_iter([(header::AUTHORIZATION, auth)]);
+    let downloader = Downloader::builder()
         .directory(PathBuf::from("output"))
-        .header(header::AUTHORIZATION, auth)
+        .headers(headermap)
         .build();
     let summaries = downloader.download(&downloads).await;
     let summary = summaries.first().unwrap();

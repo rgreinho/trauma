@@ -1,186 +1,138 @@
 //! Represents a file to be downloaded.
 
-use crate::Error;
-use reqwest::{
-    header::{ACCEPT_RANGES, CONTENT_LENGTH},
-    StatusCode, Url,
-};
+use crate::{Error, ResponseExt};
+use bon::Builder;
+use reqwest::{IntoUrl, StatusCode, Url};
 use reqwest_middleware::ClientWithMiddleware;
-use std::convert::TryFrom;
 
 /// Represents a file to be downloaded.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Builder)]
+#[builder(on(String, into))]
 pub struct Download {
     /// URL of the file to download.
-    pub url: Url,
-    /// File name used to save the file on disk.
-    pub filename: String,
+    #[builder(with = |value: impl IntoUrl| -> Result<_, Error> {
+        value.into_url().map_err(|e| Error::InvalidUrl(format!("the url  cannot be parsed: {e}")))
+    })]
+    url: Url,
+    /// File name used to save the file on disk. Overrides the file name extracted from the URL.
+    filename_override: Option<String>,
     /// Optional tag used as the progress bar message text for each download.
-    /// Falls back to `filename` if not set.
-    pub tag: Option<String>,
+    /// Falls back to `filename_override` if not set.
+    tag: Option<String>,
 }
 
 impl Download {
-    /// Creates a new [`Download`].
-    ///
-    /// When using the [`Download::try_from`] method, the file name is
-    /// automatically extracted from the URL.
-    ///
-    /// ## Example
-    ///
-    /// The following calls are equivalent, minus some extra URL validations
-    /// performed by `try_from`:
-    ///
-    /// ```no_run
-    /// # use color_eyre::{eyre::Report, Result};
-    /// use trauma::download::Download;
-    /// use reqwest::Url;
-    ///
-    /// # fn main() -> Result<(), Report> {
-    /// Download::try_from("https://example.com/file-0.1.2.zip")?;
-    /// Download::new(&Url::parse("https://example.com/file-0.1.2.zip")?, "file-0.1.2.zip");
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn new(url: &Url, filename: impl Into<String>) -> Self {
-        Self {
-            url: url.clone(),
-            filename: filename.into(),
-            tag: None,
-        }
+    pub async fn head(
+        &self,
+        client: &ClientWithMiddleware,
+    ) -> Result<reqwest::Response, reqwest_middleware::Error> {
+        client.head(self.url.clone()).send().await
     }
 
-    /// Set the download tag.
-    ///
-    /// ## Example
-    ///
-    /// ```
-    /// # use trauma::download::Download;
-    /// let d = Download::try_from("https://example.com/file-0.1.2.zip").unwrap().with_tag("my custom tag");
-    /// ```
-    pub fn with_tag(mut self, tag: impl Into<String>) -> Self {
-        self.tag = Some(tag.into());
-        self
+    pub async fn get(
+        &self,
+        client: &ClientWithMiddleware,
+    ) -> Result<reqwest::Response, reqwest_middleware::Error> {
+        client.get(self.url.clone()).send().await
     }
 
     /// Check whether the download is resumable.
-    pub async fn is_resumable(
-        &self,
-        client: &ClientWithMiddleware,
-    ) -> Result<bool, reqwest_middleware::Error> {
-        let res = client.head(self.url.clone()).send().await?;
-        let headers = res.headers();
-        let accept_ranges = match headers.get(ACCEPT_RANGES) {
-            None => false,
-            Some(x) if x == "none" => false,
-            Some(_) => true,
-        };
+    pub fn is_resumable(response: &reqwest::Response) -> bool {
+        let accept_ranges = response.accept_ranges();
 
         // If the server doesn't support range requests, we consider the
         // download as not resumable.
         if !accept_ranges {
-            return Ok(false);
+            return false;
         }
 
         // If we don't get a content length or if we get a content length of 0,
         // we also consider the download as not resumable.
-        let content_length = Self::parse_content_length(headers);
-        Ok(content_length.is_some() && content_length != Some(0))
+        let content_length = response.content_length_header();
+        content_length.is_some() && content_length != Some(0)
     }
 
-    /// Parse the content length from the headers.
+    /// Get the filename from the URL.
     ///
-    /// Returns None if the "content-length" header is missing or if its value
-    /// is not a u64.
-    pub fn parse_content_length(headers: &reqwest::header::HeaderMap) -> Option<u64> {
-        headers
-            .get(CONTENT_LENGTH)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.to_string().parse::<u64>().ok())
-    }
+    /// Returns an error if the URL does not contain a filename.
+    pub fn filename_from_url(&self) -> Result<String, Error> {
+        let path = self.url.path();
 
-    /// Retrieve the content_length of the download.
-    ///
-    /// Returns None if the "content-length" header is missing or if its value
-    /// is not a u64.
-    pub async fn content_length(
-        &self,
-        client: &ClientWithMiddleware,
-    ) -> Result<Option<u64>, reqwest_middleware::Error> {
-        let res = client.head(self.url.clone()).send().await?;
-        let headers = res.headers();
-        Ok(Self::parse_content_length(headers))
-    }
-}
+        // Check for root path early.
+        if path == "/" || path.is_empty() {
+            return Err(Error::InvalidUrl(format!(
+                "the URL \"{}\" has no filename",
+                self.url
+            )));
+        }
 
-impl TryFrom<&Url> for Download {
-    type Error = crate::Error;
-
-    fn try_from(value: &Url) -> Result<Self, Self::Error> {
-        value
+        // Get the las segment item.
+        self.url
             .path_segments()
-            .ok_or_else(|| {
-                Error::InvalidUrl(format!("the url \"{value}\" does not contain a valid path"))
-            })?
+            .ok_or_else(|| Error::InvalidUrl(format!("not an absolute URL: {}", self.url)))?
             .next_back()
             .map(String::from)
-            .map(|filename| Download {
-                url: value.clone(),
-                filename: form_urlencoded::parse(filename.as_bytes())
-                    .map(|(key, val)| [key, val].concat())
-                    .collect(),
-                tag: None,
-            })
-            .ok_or_else(|| {
-                Error::InvalidUrl(format!("the url \"{value}\" does not contain a filename"))
-            })
+            .ok_or_else(|| Error::InvalidUrl(format!("the URL \"{}\" has no filename", self.url)))
+    }
+
+    pub fn filename(&self) -> Option<String> {
+        if self.filename_override.is_some() {
+            return self.filename_override.clone();
+        }
+        self.filename_from_url().ok()
+    }
+
+    // Get the filename override if any.
+    pub fn filename_override(&self) -> Option<&String> {
+        self.filename_override.as_ref()
+    }
+
+    // Get the tag if any.
+    pub fn tag(&self) -> Option<&String> {
+        self.tag.as_ref()
+    }
+
+    /// Get the URL.
+    ///
+    /// Returns a clone of the URL.
+    pub fn url(&self) -> Url {
+        self.url.clone()
+    }
+
+    /// Get the URL as &str.
+    pub fn url_as_str(&self) -> &str {
+        self.url.as_str()
     }
 }
 
-impl TryFrom<&str> for Download {
-    type Error = crate::Error;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Url::parse(value)
-            .map_err(|e| Error::InvalidUrl(format!("the url \"{value}\" cannot be parsed: {e}")))
-            .and_then(|u| Download::try_from(&u))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Status {
     Fail(String),
+    #[default]
     NotStarted,
     Skipped(String),
     Success,
 }
 /// Represents a [`Download`] summary.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Builder)]
 pub struct Summary {
     /// Downloaded items.
     download: Download,
     /// HTTP status code.
+    #[builder(default = StatusCode::PROCESSING)]
     statuscode: StatusCode,
     /// Download size in bytes.
+    #[builder(default)]
     size: u64,
     /// Status.
+    #[builder(default)]
     status: Status,
     /// Resumable.
+    #[builder(default)]
     resumable: bool,
 }
 
 impl Summary {
-    /// Create a new [`Download`] [`Summary`].
-    pub fn new(download: Download, statuscode: StatusCode, size: u64, resumable: bool) -> Self {
-        Self {
-            download,
-            statuscode,
-            size,
-            status: Status::NotStarted,
-            resumable,
-        }
-    }
-
     /// Attach a status to a [`Download`] [`Summary`].
     pub fn with_status(self, status: Status) -> Self {
         Self { status, ..self }
@@ -207,10 +159,10 @@ impl Summary {
     }
 
     pub fn fail(self, msg: impl std::fmt::Display) -> Self {
-        Self {
-            status: Status::Fail(format!("{msg}")),
-            ..self
-        }
+        Self::builder()
+            .download(self.download)
+            .status(Status::Fail(format!("{msg}")))
+            .build()
     }
 
     /// Set the summary's resumable.
@@ -232,15 +184,8 @@ mod test {
     const DOMAIN: &str = "http://domain.com/file.zip";
 
     #[test]
-    fn test_try_from_url() {
-        let u = Url::parse(DOMAIN).unwrap();
-        let d = Download::try_from(&u).unwrap();
-        assert_eq!(d.filename, "file.zip")
-    }
-
-    #[test]
-    fn test_try_from_string() {
-        let d = Download::try_from(DOMAIN).unwrap();
-        assert_eq!(d.filename, "file.zip")
+    fn test_builder_from_url_as_str() {
+        let d = Download::builder().url(DOMAIN).unwrap().build();
+        assert_eq!(d.filename().unwrap(), "file.zip".to_string())
     }
 }
