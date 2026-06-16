@@ -11,7 +11,7 @@ use reqwest_middleware::ClientWithMiddleware;
 pub struct Download {
     /// URL of the file to download.
     #[builder(with = |value: impl IntoUrl| -> Result<_, Error> {
-        value.into_url().map_err(|e| Error::InvalidUrl(format!("the url  cannot be parsed: {e}")))
+        value.into_url().map_err(|e| Error::InvalidUrl(format!("the url cannot be parsed: {e}")))
     })]
     url: Url,
     /// File name used to save the file on disk. Overrides the file name extracted from the URL.
@@ -66,7 +66,7 @@ impl Download {
             )));
         }
 
-        // Get the las segment item.
+        // Get the last segment item.
         self.url
             .path_segments()
             .ok_or_else(|| Error::InvalidUrl(format!("not an absolute URL: {}", self.url)))?

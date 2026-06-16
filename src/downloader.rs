@@ -159,7 +159,6 @@ impl Downloader {
         tag_width: Option<usize>,
     ) -> Summary {
         // Create a download summary.
-        let mut size_on_disk: u64 = 0;
         let mut can_resume = false;
         let summary = Summary::builder().download(download.clone());
 
@@ -173,15 +172,13 @@ impl Downloader {
         };
         let output = self.directory.join(filename);
 
-        // Check if there is a file on disk already (async).
-        match tokio::fs::metadata(&output).await {
+        // Check if there is a file on disk already.
+        let size_on_disk: u64 = match tokio::fs::metadata(&output).await {
             Ok(m) => {
                 debug!("A file with the same name already exists at the destination.");
                 // If so, check file length to know where to restart the download from.
-                size_on_disk = m.len();
-                true
+                m.len()
             }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => false,
             Err(e) => {
                 return summary.status(Status::Fail(e.to_string())).build();
             }
