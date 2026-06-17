@@ -1,6 +1,6 @@
 [package]
 name = "trauma"
-version = "2.5.0"
+version = "3.0.0"
 edition = "2021"
 license = "MIT"
 description = "Simplify and prettify HTTP downloads"
@@ -14,7 +14,6 @@ keywords = ["http", "download", "async", "tokio", "indicatif"]
 reqwest = { version = "0.13.4", default-features = false, features = [
   "charset",
   "http2",
-  "rustls",
   "system-proxy",
   "stream",
   "socks",
@@ -40,5 +39,6 @@ rand = "0.10.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
-default = ["reqwest/default-tls"]
+default = ["rustls"]
 rustls = ["reqwest/rustls"]
+default-tls = ["reqwest/default-tls"]
