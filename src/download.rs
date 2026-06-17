@@ -14,11 +14,9 @@ pub struct Download {
         value.into_url().map_err(|e| Error::InvalidUrl(format!("the url cannot be parsed: {e}")))
     })]
     url: Url,
-    /// File name used to save the file on disk. Overrides the file name extracted from the URL.
+    /// File name used to save the file on disk. Overrides the file name
+    /// extracted from the URL.
     filename_override: Option<String>,
-    /// Optional tag used as the progress bar message text for each download.
-    /// Falls back to `filename_override` if not set.
-    tag: Option<String>,
 }
 
 impl Download {
@@ -52,6 +50,40 @@ impl Download {
         content_length.is_some() && content_length != Some(0)
     }
 
+    /// Get the filename from the `Content-Disposition` header.
+    ///
+    /// Returns `None` if the header is not set or if its value cannot be parsed.
+    pub fn filename_from_content_disposition(response: &reqwest::Response) -> Option<String> {
+        if let Some(value) = response.content_disposition() {
+            return Download::parse_content_disposition(&value);
+        }
+
+        None
+    }
+
+    /// Parse the value of the `Content-Dispostion` header.
+    ///
+    /// Attempts to extract the filename form the header value.
+    fn parse_content_disposition(value: &str) -> Option<String> {
+        if let Some(filename) = value.split(';').find_map(|part| {
+            if part.trim().starts_with("filename=") {
+                return Some(
+                    part.trim()
+                        .split('=')
+                        .nth(1)
+                        .unwrap()
+                        .trim_matches('"')
+                        .to_string(),
+                );
+            }
+            None
+        }) {
+            return Some(filename);
+        }
+
+        None
+    }
+
     /// Get the filename from the URL.
     ///
     /// Returns an error if the URL does not contain a filename.
@@ -75,21 +107,30 @@ impl Download {
             .ok_or_else(|| Error::InvalidUrl(format!("the URL \"{}\" has no filename", self.url)))
     }
 
-    pub fn filename(&self) -> Option<String> {
+    /// Get the filename from multiple sources.
+    ///
+    /// Here is the precedence order:
+    ///   - filename override
+    ///   - filename from `Content-Disposition` header
+    ///   - filename from URL
+    ///
+    /// Returns `None` if the name cannot be determined.
+    pub fn infer_filename(&self, response: &reqwest::Response) -> Option<String> {
         if self.filename_override.is_some() {
             return self.filename_override.clone();
         }
+
+        let filename = Download::filename_from_content_disposition(response);
+        if filename.is_some() {
+            return filename;
+        }
+
         self.filename_from_url().ok()
     }
 
-    // Get the filename override if any.
+    /// Get the filename override if any.
     pub fn filename_override(&self) -> Option<&String> {
         self.filename_override.as_ref()
-    }
-
-    // Get the tag if any.
-    pub fn tag(&self) -> Option<&String> {
-        self.tag.as_ref()
     }
 
     /// Get the URL.
@@ -186,6 +227,16 @@ mod test {
     #[test]
     fn test_builder_from_url_as_str() {
         let d = Download::builder().url(DOMAIN).unwrap().build();
-        assert_eq!(d.filename().unwrap(), "file.zip".to_string())
+        assert_eq!(d.filename_from_url().unwrap(), "file.zip".to_string())
+    }
+
+    #[test]
+    fn test_parse_content_disposition() {
+        let value = "attachment; filename=VSCodeUserSetup-x64-1.124.2.exe; filename*=UTF-8''VSCodeUserSetup-x64-1.124.2.exe";
+        let filename = Download::parse_content_disposition(value);
+        assert_eq!(
+            filename,
+            Some("VSCodeUserSetup-x64-1.124.2.exe".to_string())
+        )
     }
 }

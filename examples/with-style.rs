@@ -16,7 +16,7 @@ use trauma::{
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let debian_net_install =
-        "https://cdimage.debian.org/debian-cd/current/arm64/iso-cd/debian-11.7.0-arm64-netinst.iso";
+        "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-13.5.0-amd64-netinst.iso";
     let downloads = vec![Download::builder().url(debian_net_install)?.build()];
     let style_opts = StyleOptions::builder()
         // The main bar uses a predefined template and progression characters set.
@@ -34,10 +34,11 @@ async fn main() -> Result<(), Error> {
         .child(
             ProgressBarOpts::builder()
                 .template(format!(
-                    "{{bar:40.cyan/blue}} {{percent:>2.magenta}}{} ● {{eta_precise:.blue}}",
+                    "{{bar:40.cyan/blue}} {{percent:>2.magenta}}{} ● {{eta_precise:.blue}} {{msg}}",
                     style("%").magenta(),
                 ))
                 .progress_chars("●◕◑◔○")
+                .clear()
                 .build(),
         )
         .build();
@@ -51,5 +52,6 @@ async fn main() -> Result<(), Error> {
         .style_options(style_opts)
         .build();
     downloader.download(&downloads).await;
+
     Ok(())
 }
