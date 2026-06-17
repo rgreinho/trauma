@@ -4,10 +4,7 @@
 pub mod download;
 pub mod downloader;
 
-use reqwest::{
-    header::{ACCEPT_RANGES, CONTENT_LENGTH},
-    Url,
-};
+use reqwest::header::{ACCEPT_RANGES, CONTENT_LENGTH};
 use std::io;
 use thiserror::Error;
 
@@ -37,7 +34,7 @@ pub enum Error {
 /// Extension trait for `reqwest::header::HeaderMap`
 ///
 /// Provide convenient methods for accessing common headers values.
-pub trait ResponseExt {
+pub(crate) trait ResponseExt {
     /// Get the content length from the headers.
     ///
     /// Returns None if the "content-length" header is missing or if its value
@@ -49,12 +46,6 @@ pub trait ResponseExt {
     /// Returns false if the "accept-ranges" header is missing or if its value
     /// is "none".
     fn accept_ranges(&self) -> bool;
-
-    /// Get the location header from the headers.
-    ///
-    /// Returns None if the "location" header is missing or if its value cannot
-    /// be parsed as a URL.
-    fn location(&self) -> Option<Url>;
 
     /// Get the content disposition header from the headers.
     ///
@@ -77,13 +68,6 @@ impl ResponseExt for reqwest::Response {
             Some(x) if x == "none" => false,
             Some(_) => true,
         }
-    }
-
-    fn location(&self) -> Option<Url> {
-        self.headers()
-            .get(reqwest::header::LOCATION)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|s| self.url().join(s).ok())
     }
 
     fn content_disposition(&self) -> Option<String> {

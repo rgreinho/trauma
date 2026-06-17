@@ -12,14 +12,15 @@ Trauma is a library simplifying and prettifying HTTP(s) downloads. The downloads
 are executed asynchronously and progress bars are drawn on the screen to help
 monitoring the process.
 
-![screenshot](assets/pip-style.png)
+![trauma v3 default UI](assets/trauma-v3-default.png)
 
 ### Features
 
 - Library only
-- HTTP(S) downloads
+- HTTP(S) downloads with [rustls]
 - Support download via proxies
 - Download files via providing a list of URLs
+  - Automatically use the remote file names
   - Ability to rename downloaded files
 - Ability to configure the download manager
   - Download directory
@@ -36,7 +37,7 @@ monitoring the process.
   - Customize the progression style
   - Leave them on the screen or clear them upon completion
   - Hide any or both of them
-  - Add pre-configured styles
+  - Use pre-configured styles
 
 ## Usage
 
@@ -44,23 +45,30 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-trauma = "2"
-# or `trauma = { version = "2", default-features = false, features = ["rustls"] }` if you prefer rustls
+trauma = "3"
+```
+
+### Features
+
+By default, `trauma` enables [rustls] for TLS support.
+
+To explicitly use the legacy `default-tls` specify this feature instead:
+
+```toml
+[dependencies]
+trauma = { version = "3", default-features = false, features = ["default-tls"] }
 ```
 
 ## Quick start
 
 ```rust
-use std::path::PathBuf;
 use trauma::{download::Download, downloader::DownloaderBuilder, Error};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let reqwest_rs = "https://github.com/seanmonstar/reqwest/archive/refs/tags/v0.11.9.zip";
-    let downloads = vec![Download::try_from(reqwest_rs).unwrap()];
-    let downloader = DownloaderBuilder::new()
-        .directory(PathBuf::from("output"))
-        .build();
+    let downloads = vec![Download::builder().url(reqwest_rs)?.build()];
+    let downloader = Downloader::builder().directory("output").build();
     downloader.download(&downloads).await;
     Ok(())
 }
@@ -97,5 +105,6 @@ However they are almost all abandoned:
 As a result, I decided to write `trauma`.
 
 [indicatif]: https://github.com/console-rs/indicatif
+[rustls]: https://rustls.dev/
 [tokio]: https://tokio.rs/
 [zou]: https://github.com/k0pernicus/zou
