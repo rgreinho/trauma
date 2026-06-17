@@ -356,6 +356,14 @@ impl Default for StyleOptions {
 }
 
 impl StyleOptions {
+    /// Convenience function to create a style hidding the progress bars.
+    pub fn hidden() -> Self {
+        Self::builder()
+            .main(ProgressBarOpts::hidden())
+            .child(ProgressBarOpts::hidden())
+            .build()
+    }
+
     /// Set the options for the main progress bar.
     pub fn set_main(&mut self, main: ProgressBarOpts) {
         self.main = main;
@@ -369,14 +377,6 @@ impl StyleOptions {
     /// Check whether both progress bars are hidden.
     pub fn is_hidden(&self) -> bool {
         self.main.hidden && self.child.hidden
-    }
-
-    /// Convenience function to hide the progress bars.
-    pub fn hidden() -> Self {
-        Self::builder()
-            .main(ProgressBarOpts::hidden())
-            .child(ProgressBarOpts::hidden())
-            .build()
     }
 }
 
@@ -413,7 +413,7 @@ impl ProgressBarOpts {
         "{bar:20.blue} {pos:>4}/{len:4} ({percent}%) eta {eta_precise:.blue} {msg}";
     /// Template which looks like the Python package installer pip.
     ///
-    /// `━━━━━╾──────────────    3.78 MiB/13.43 MiB    191.39 KiB/s eta 52s  GalgameManager_1.1.1_x64_en-US.msi`
+    /// `━━━━━╾──────────────    3.78 MiB/13.43 MiB    191.39 KiB/s eta 52s  archive.zip`
     pub const TEMPLATE_PIP: &'static str =
         "{bar:20.green/black} {bytes:>11.green}/{total_bytes:<11.green} {bytes_per_sec:>13.red} eta {eta:4.blue} {msg}";
     /// Use increasing quarter blocks as progress characters: `"█▛▌▖  "`.
