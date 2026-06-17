@@ -6,7 +6,7 @@
 //! ```not_rust
 //! mkdir -p examples/miniserve
 //! cd examples/miniserve
-//! curl -sLO http://212.183.159.230/5MB.zip
+//! curl -sLO https://samplefile.com/samples/download/archive/zip/zip_sample_file_50MB.zip
 //! miniserve .
 //! ```
 //! Run with:

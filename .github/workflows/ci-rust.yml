@@ -29,7 +29,6 @@ jobs:
           with-report
           with-resume
           with-style
-          with-tag
           "
           for example in $EXAMPLES; do
             echo "==== Testing $example ======================================="
