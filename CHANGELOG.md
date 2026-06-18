@@ -8,6 +8,30 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-06-18
+
+### Added
+
+- Introduced [bon](https://bon-rs.com/) as the builder generator, simplifying
+  `Download` and `Downloader` construction (but other structs initilization as
+  well). This change did rename/replace some fields. [#169]
+
+### Changed
+
+- Switched default TLS support to `rustls` (kept `default-tls` feature for
+  legacy behavior). [#173]
+- Updated the default progress bar template displaying the file name as the
+  final element. [#172]
+- Removed the `tag` field on `Download`. [#172]
+- The filename is infered from the remote name by default. [#172]
+- Updated documentation and README to reflect the v3 API and feature changes.
+  [#173]
+
+[#169]: https://github.com/rgreinho/trauma/pull/169
+[#172]: https://github.com/rgreinho/trauma/pull/172
+[#173]: https://github.com/rgreinho/trauma/pull/173
+[3.0.0]: https://github.com/rgreinho/trauma/releases/tag/3.0.0
+
 ## [2.5.0] - 2026-06-11
 
 ### Fixed
