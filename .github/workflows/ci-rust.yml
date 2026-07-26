@@ -121,7 +121,7 @@ jobs:
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2
       - name: Publish the release
-        uses: softprops/action-gh-release@v3.0.1
+        uses: softprops/action-gh-release@v3.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
