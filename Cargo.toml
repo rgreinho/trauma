@@ -32,7 +32,7 @@ bon = "3.9.3"
 
 [dev-dependencies]
 color-eyre = "0.6.5"
-comfy-table = "7.2.2"
+comfy-table = "8.0.0"
 console = "0.16.3"
 opentelemetry = "0.32.0"
 rand = "0.10.1"
